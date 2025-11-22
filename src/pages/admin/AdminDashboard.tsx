@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { projectService, taskService, userService } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FolderKanban, CheckSquare, Clock, Users, TrendingUp } from "lucide-react";
+import {
+  FolderKanban,
+  CheckSquare,
+  Clock,
+  Users,
+  TrendingUp,
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 interface DashboardStats {
@@ -30,26 +36,32 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const [projectsData, tasksData, membersData] = await Promise.all([
-        supabase.from("projects").select("*", { count: "exact" }),
-        supabase.from("tasks").select("*"),
-        supabase.from("profiles").select("*", { count: "exact" }),
+      const [projects, tasks, users] = await Promise.all([
+        projectService.getAll(),
+        taskService.getAll(),
+        userService.getAll(),
       ]);
 
-      const tasks = tasksData.data || [];
-      const completedTasks = tasks.filter((t) => t.status === "completed").length;
-      const inProgressTasks = tasks.filter((t) => t.status === "in_progress").length;
+      const completedTasks = tasks.filter(
+        (t: any) => t.status === "completed"
+      ).length;
+      const inProgressTasks = tasks.filter(
+        (t: any) => t.status === "in_progress"
+      ).length;
       const overdueTasks = tasks.filter(
-        (t) => t.deadline && new Date(t.deadline) < new Date() && t.status !== "completed"
+        (t: any) =>
+          t.deadline &&
+          new Date(t.deadline) < new Date() &&
+          t.status !== "completed"
       ).length;
 
       setStats({
-        totalProjects: projectsData.count || 0,
+        totalProjects: projects.length,
         totalTasks: tasks.length,
         completedTasks,
         inProgressTasks,
         overdueTasks,
-        totalMembers: membersData.count || 0,
+        totalMembers: users.length,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -58,9 +70,10 @@ export default function AdminDashboard() {
     }
   };
 
-  const completionRate = stats.totalTasks > 0
-    ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
-    : 0;
+  const completionRate =
+    stats.totalTasks > 0
+      ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
+      : 0;
 
   const statCards = [
     {
@@ -99,14 +112,18 @@ export default function AdminDashboard() {
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Overview of all projects and tasks</p>
+        <p className="text-muted-foreground">
+          Overview of all projects and tasks
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {statCards.map((stat) => (
           <Card key={stat.title} className="glass">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {stat.title}
+              </CardTitle>
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </CardHeader>
             <CardContent>

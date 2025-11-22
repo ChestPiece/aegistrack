@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { taskService, projectService, userService } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar } from "lucide-react";
@@ -45,26 +45,15 @@ export default function Tasks() {
 
   const fetchData = async () => {
     try {
-      const [tasksData, projectsData, usersData] = await Promise.all([
-        supabase
-          .from("tasks")
-          .select(`
-            *,
-            projects(title),
-            profiles!tasks_assigned_to_fkey(full_name, email)
-          `)
-          .order("created_at", { ascending: false }),
-        supabase.from("projects").select("*"),
-        supabase.from("profiles").select("*"),
+      const [tasks, projects, users] = await Promise.all([
+        taskService.getAll(),
+        projectService.getAll(),
+        userService.getAll(),
       ]);
 
-      if (tasksData.error) throw tasksData.error;
-      if (projectsData.error) throw projectsData.error;
-      if (usersData.error) throw usersData.error;
-
-      setTasks(tasksData.data || []);
-      setProjects(projectsData.data || []);
-      setUsers(usersData.data || []);
+      setTasks(tasks || []);
+      setProjects(projects || []);
+      setUsers(users || []);
     } catch (error: any) {
       toast.error("Failed to load data");
     } finally {
@@ -75,15 +64,12 @@ export default function Tasks() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from("tasks").insert([
-        {
-          ...formData,
-          deadline: formData.deadline || null,
-          assigned_to: formData.assigned_to || null,
-        },
-      ]);
-
-      if (error) throw error;
+      await taskService.create({
+        ...formData,
+        deadline: formData.deadline || null,
+        assignedTo: formData.assigned_to || null,
+        projectId: formData.project_id,
+      });
 
       toast.success("Task created successfully");
       setIsDialogOpen(false);
@@ -93,7 +79,6 @@ export default function Tasks() {
         project_id: "",
         assigned_to: "",
         deadline: "",
-        status: "pending",
       });
       fetchData();
     } catch (error: any) {
@@ -101,15 +86,12 @@ export default function Tasks() {
     }
   };
 
-  const updateTaskStatus = async (taskId: string, newStatus: "pending" | "in_progress" | "completed") => {
+  const updateTaskStatus = async (
+    taskId: string,
+    newStatus: "pending" | "in_progress" | "completed"
+  ) => {
     try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ status: newStatus })
-        .eq("id", taskId);
-
-      if (error) throw error;
-
+      await taskService.update(taskId, { status: newStatus });
       toast.success("Task status updated");
       fetchData();
     } catch (error: any) {
@@ -133,7 +115,9 @@ export default function Tasks() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
-          <p className="text-muted-foreground">Manage all tasks across projects</p>
+          <p className="text-muted-foreground">
+            Manage all tasks across projects
+          </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -153,7 +137,9 @@ export default function Tasks() {
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -162,7 +148,9 @@ export default function Tasks() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows={3}
                 />
               </div>
@@ -170,7 +158,9 @@ export default function Tasks() {
                 <Label htmlFor="project">Project</Label>
                 <Select
                   value={formData.project_id}
-                  onValueChange={(value) => setFormData({ ...formData, project_id: value })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, project_id: value })
+                  }
                   required
                 >
                   <SelectTrigger>
@@ -189,7 +179,9 @@ export default function Tasks() {
                 <Label htmlFor="assigned">Assign to (optional)</Label>
                 <Select
                   value={formData.assigned_to}
-                  onValueChange={(value) => setFormData({ ...formData, assigned_to: value })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, assigned_to: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select user" />
@@ -209,11 +201,17 @@ export default function Tasks() {
                   id="deadline"
                   type="date"
                   value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, deadline: e.target.value })
+                  }
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit">Create Task</Button>
@@ -251,12 +249,15 @@ export default function Tasks() {
             </CardHeader>
             <CardContent className="space-y-3">
               {task.description && (
-                <p className="text-sm text-muted-foreground">{task.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {task.description}
+                </p>
               )}
               <div className="flex items-center gap-4 text-sm">
                 {task.profiles && (
                   <span className="text-muted-foreground">
-                    Assigned to: {task.profiles.full_name || task.profiles.email}
+                    Assigned to:{" "}
+                    {task.profiles.full_name || task.profiles.email}
                   </span>
                 )}
                 {task.deadline && (
@@ -273,7 +274,9 @@ export default function Tasks() {
 
       {tasks.length === 0 && !loading && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No tasks yet. Create your first task!</p>
+          <p className="text-muted-foreground">
+            No tasks yet. Create your first task!
+          </p>
         </div>
       )}
     </div>

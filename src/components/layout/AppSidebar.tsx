@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -31,38 +32,42 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, userRole, signOut } = useAuth();
   const collapsed = state === "collapsed";
-  
+
   const isActive = (path: string) => location.pathname === path;
-  
+
   const adminItems = [
     { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
     { title: "Projects", url: "/admin/projects", icon: FolderKanban },
     { title: "Tasks", url: "/admin/tasks", icon: CheckSquare },
     { title: "Team", url: "/admin/team", icon: Users },
   ];
-  
+
   const userItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "My Tasks", url: "/tasks", icon: CheckSquare },
     { title: "Projects", url: "/projects", icon: FolderKanban },
   ];
-  
+
   const commonItems = [
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Profile", url: "/profile", icon: User },
   ];
-  
+
   const menuItems = userRole === "admin" ? adminItems : userItems;
 
   return (
     <Sidebar className={collapsed ? "w-16" : "w-64"}>
       <SidebarContent>
         <div className="px-3 py-4">
-          <h2 className={`font-bold text-xl tracking-tight ${collapsed ? "text-center" : ""}`}>
+          <h2
+            className={`font-bold text-xl tracking-tight ${
+              collapsed ? "text-center" : ""
+            }`}
+          >
             {collapsed ? "AT" : "AegisTrack"}
           </h2>
         </div>
-        
+
         <SidebarGroup>
           <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -85,7 +90,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
+
         <SidebarGroup>
           <SidebarGroupLabel>Account</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -109,10 +114,14 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      
+
       <SidebarFooter>
         <div className="p-3 border-t">
-          <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
+          <div
+            className={`flex items-center gap-3 ${
+              collapsed ? "justify-center" : ""
+            }`}
+          >
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary text-primary-foreground">
                 {user?.email?.charAt(0).toUpperCase() || "U"}
@@ -121,10 +130,13 @@ export function AppSidebar() {
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{user?.email}</p>
-                <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {userRole}
+                </p>
               </div>
             )}
           </div>
+          <ThemeToggle collapsed={collapsed} />
           <Button
             variant="ghost"
             size={collapsed ? "icon" : "sm"}

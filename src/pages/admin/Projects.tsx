@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { projectService } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar, Users } from "lucide-react";
@@ -33,16 +33,7 @@ export default function Projects() {
 
   const fetchProjects = async () => {
     try {
-      const { data, error } = await supabase
-        .from("projects")
-        .select(`
-          *,
-          project_members(count),
-          tasks(count, status)
-        `)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
+      const data = await projectService.getAll();
       setProjects(data || []);
     } catch (error: any) {
       toast.error("Failed to load projects");
@@ -54,14 +45,10 @@ export default function Projects() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from("projects").insert([
-        {
-          ...formData,
-          deadline: formData.deadline || null,
-        },
-      ]);
-
-      if (error) throw error;
+      await projectService.create({
+        ...formData,
+        deadline: formData.deadline || null,
+      });
 
       toast.success("Project created successfully");
       setIsDialogOpen(false);
@@ -112,7 +99,9 @@ export default function Projects() {
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
                   required
                 />
               </div>
@@ -121,7 +110,9 @@ export default function Projects() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows={4}
                 />
               </div>
@@ -131,11 +122,17 @@ export default function Projects() {
                   id="deadline"
                   type="date"
                   value={formData.deadline}
-                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, deadline: e.target.value })
+                  }
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit">Create Project</Button>
@@ -148,11 +145,19 @@ export default function Projects() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {projects.map((project) => {
           const totalTasks = project.tasks?.length || 0;
-          const completedTasks = project.tasks?.filter((t: any) => t.status === "completed").length || 0;
-          const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+          const completedTasks =
+            project.tasks?.filter((t: any) => t.status === "completed")
+              .length || 0;
+          const completionRate =
+            totalTasks > 0
+              ? Math.round((completedTasks / totalTasks) * 100)
+              : 0;
 
           return (
-            <Card key={project.id} className="glass hover:shadow-lg transition-all">
+            <Card
+              key={project.id}
+              className="glass hover:shadow-lg transition-all"
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-lg">{project.title}</CardTitle>
@@ -168,12 +173,16 @@ export default function Projects() {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    <span>{project.project_members?.[0]?.count || 0} members</span>
+                    <span>
+                      {project.project_members?.[0]?.count || 0} members
+                    </span>
                   </div>
                   {project.deadline && (
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      <span>{new Date(project.deadline).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(project.deadline).toLocaleDateString()}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -200,7 +209,9 @@ export default function Projects() {
 
       {projects.length === 0 && !loading && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">No projects yet. Create your first project!</p>
+          <p className="text-muted-foreground">
+            No projects yet. Create your first project!
+          </p>
         </div>
       )}
     </div>

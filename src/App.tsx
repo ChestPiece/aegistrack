@@ -33,13 +33,18 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/signup" element={<Signup />} />
-            
+
             {/* Admin Routes */}
             <Route
               path="/admin/dashboard"
@@ -81,7 +86,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
+
             {/* User Routes */}
             <Route
               path="/dashboard"
@@ -113,7 +118,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

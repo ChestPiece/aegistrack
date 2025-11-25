@@ -126,16 +126,20 @@ export default function Tasks() {
               New Task
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
+              <DialogTitle className="text-xl">Create New Task</DialogTitle>
               <DialogDescription>Add a new task to a project</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Task Title</Label>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="title" className="text-sm font-medium">
+                  Task Title
+                </Label>
                 <Input
                   id="title"
+                  placeholder="Enter task title"
+                  className="h-10"
                   value={formData.title}
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
@@ -143,10 +147,79 @@ export default function Tasks() {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="project" className="text-sm font-medium">
+                    Project
+                  </Label>
+                  <Select
+                    value={formData.project_id}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, project_id: value })
+                    }
+                    required
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="assigned" className="text-sm font-medium">
+                    Assign to (optional)
+                  </Label>
+                  <Select
+                    value={formData.assigned_to}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, assigned_to: value })
+                    }
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.supabaseId}>
+                          {user.fullName || user.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="deadline" className="text-sm font-medium">
+                  Deadline (optional)
+                </Label>
+                <Input
+                  id="deadline"
+                  type="date"
+                  className="h-10"
+                  value={formData.deadline}
+                  onChange={(e) =>
+                    setFormData({ ...formData, deadline: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-sm font-medium">
+                  Description
+                </Label>
                 <Textarea
                   id="description"
+                  placeholder="Describe the task (optional)"
+                  className="min-h-[80px] resize-none"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -154,67 +227,19 @@ export default function Tasks() {
                   rows={3}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="project">Project</Label>
-                <Select
-                  value={formData.project_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, project_id: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="assigned">Assign to (optional)</Label>
-                <Select
-                  value={formData.assigned_to}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, assigned_to: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.supabaseId}>
-                        {user.fullName || user.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="deadline">Deadline (optional)</Label>
-                <Input
-                  id="deadline"
-                  type="date"
-                  value={formData.deadline}
-                  onChange={(e) =>
-                    setFormData({ ...formData, deadline: e.target.value })
-                  }
-                />
-              </div>
-              <div className="flex justify-end gap-3">
+
+              <div className="flex justify-end gap-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
+                  className="h-10 px-5"
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Create Task</Button>
+                <Button type="submit" className="h-10 px-5">
+                  Create Task
+                </Button>
               </div>
             </form>
           </DialogContent>

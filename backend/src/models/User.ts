@@ -24,7 +24,7 @@ const UserSchema: Schema = new Schema(
     company: { type: String },
     bio: { type: String },
     location: { type: String },
-    role: { type: String, enum: ["admin", "member"], default: "member" },
+    role: { type: String, enum: ["admin", "member"], default: "admin" },
   },
   { timestamps: true }
 );

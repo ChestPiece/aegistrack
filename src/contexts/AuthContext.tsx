@@ -63,11 +63,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserRole = async (userId: string) => {
     try {
       const user = await userService.getCurrent();
-      setUserRole(user.role || "member");
+      setUserRole(user.role || "admin");
       setUserData(user);
     } catch (error: any) {
       console.error("Error fetching user role:", error);
-      setUserRole("member");
+      setUserRole("admin");
       setUserData(null);
     } finally {
       setLoading(false);
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUserData = async () => {
     try {
       const user = await userService.getCurrent();
-      setUserRole(user.role || "member");
+      setUserRole(user.role || "admin");
       setUserData(user);
     } catch (error: any) {
       console.error("Error refreshing user data:", error);

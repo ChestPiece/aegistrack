@@ -103,7 +103,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       supabaseId: authData.user.id,
       email,
       fullName,
-      role: role || "member",
+      role: role || "admin",
     });
 
     await newUser.save();

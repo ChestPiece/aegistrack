@@ -47,7 +47,7 @@ export default function Team() {
     email: "",
     password: "",
     fullName: "",
-    role: "member" as "admin" | "member",
+    role: "admin" as "admin" | "member",
   });
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function Team() {
       await userService.create(formData);
       toast.success("User created successfully");
       setIsCreateDialogOpen(false);
-      setFormData({ email: "", password: "", fullName: "", role: "member" });
+      setFormData({ email: "", password: "", fullName: "", role: "admin" });
       fetchMembers();
     } catch (error: any) {
       toast.error(error.message || "Failed to create user");
@@ -121,7 +121,7 @@ export default function Team() {
       email: user.email,
       password: "",
       fullName: user.fullName || "",
-      role: user.role || "member",
+      role: user.role || "admin",
     });
     setIsEditDialogOpen(true);
   };
@@ -228,35 +228,37 @@ export default function Team() {
           const completedTasks = memberTasks.filter(
             (t) => t.status === "completed"
           ).length;
-          const role = member.role || "member";
+          const role = member.role || "admin";
 
           return (
             <Card key={member.id} className="glass">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-12 w-12">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-14 w-14">
                     <AvatarFallback className="bg-primary text-primary-foreground text-lg">
                       {member.email.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 space-y-1">
-                    <CardTitle className="text-lg">
-                      {member.fullName || "No name"}
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <CardTitle className="text-lg truncate">
+                        {member.fullName || "No name"}
+                      </CardTitle>
+                      <Badge
+                        variant={role === "admin" ? "default" : "secondary"}
+                        className="capitalize shrink-0"
+                      >
+                        {role}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
                       {member.email}
                     </p>
                   </div>
-                  <Badge
-                    variant={role === "admin" ? "default" : "secondary"}
-                    className="capitalize"
-                  >
-                    {role}
-                  </Badge>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
                       Tasks assigned
@@ -267,22 +269,24 @@ export default function Team() {
                     <span className="text-muted-foreground">Completed</span>
                     <span className="font-medium">{completedTasks}</span>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditDialog(member)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openDeleteDialog(member)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-accent"
+                    onClick={() => openEditDialog(member)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hover:bg-destructive/10"
+                    onClick={() => openDeleteDialog(member)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>

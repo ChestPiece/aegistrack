@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Project, Task, User } from "@/types";
+import { Project, Task, User, Notification } from "@/types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -75,4 +75,31 @@ export const userService = {
     api.post<User, Record<string, never>>("/users/sync", {}),
   getCurrent: (): Promise<User> => api.get<User>("/users/me"),
   getAll: (): Promise<User[]> => api.get<User[]>("/users"),
+  create: (data: {
+    email: string;
+    password: string;
+    fullName?: string;
+    role?: "admin" | "member";
+  }): Promise<User> => api.post<User, typeof data>("/users", data),
+  update: (
+    id: string,
+    data: { fullName?: string; role?: "admin" | "member" }
+  ): Promise<User> => api.put<User, typeof data>(`/users/${id}`, data),
+  delete: (id: string): Promise<{ message: string }> =>
+    api.delete<{ message: string }>(`/users/${id}`),
+};
+
+export const notificationService = {
+  getAll: (): Promise<Notification[]> =>
+    api.get<Notification[]>("/notifications"),
+  markAsRead: (id: string): Promise<Notification> =>
+    api.put<Notification, Record<string, never>>(
+      `/notifications/${id}/read`,
+      {}
+    ),
+  markAllAsRead: (): Promise<{ message: string }> =>
+    api.put<{ message: string }, Record<string, never>>(
+      "/notifications/read-all",
+      {}
+    ),
 };

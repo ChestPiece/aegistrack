@@ -1,6 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { Bell } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -19,18 +19,9 @@ export function AppLayout({ children }: AppLayoutProps) {
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
             <SidebarTrigger />
             <div className="flex-1" />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={() => navigate("/notifications")}
-            >
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationBell />
           </header>
-          <main className="flex-1 p-6">
-            {children}
-          </main>
+          <main className="flex-1 p-6">{children}</main>
         </div>
       </div>
     </SidebarProvider>

@@ -10,6 +10,7 @@ import {
   RecentTasksSkeleton,
 } from "@/components/SkeletonLoaders";
 import { taskService, projectService } from "@/services/api";
+import { Task, Project } from "@/types";
 
 interface UserStats {
   myTasks: number;
@@ -28,7 +29,7 @@ export default function UserDashboard() {
     overdueTasks: 0,
     myProjects: 0,
   });
-  const [recentTasks, setRecentTasks] = useState<any[]>([]);
+  const [recentTasks, setRecentTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,13 +46,13 @@ export default function UserDashboard() {
       ]);
 
       const completedTasks = tasks.filter(
-        (t: any) => t.status === "completed"
+        (t: Task) => t.status === "completed"
       ).length;
       const inProgressTasks = tasks.filter(
-        (t: any) => t.status === "in_progress"
+        (t: Task) => t.status === "in_progress"
       ).length;
       const overdueTasks = tasks.filter(
-        (t: any) =>
+        (t: Task) =>
           t.deadline &&
           new Date(t.deadline) < new Date() &&
           t.status !== "completed"

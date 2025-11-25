@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { userService } from "@/services/api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         setTimeout(() => {
           fetchUserRole(session.user.id);
@@ -56,14 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserRole = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      setUserRole(data?.role || "member");
+      const user = await userService.getCurrent();
+      setUserRole(user.role || "member");
     } catch (error: any) {
       console.error("Error fetching user role:", error);
       setUserRole("member");
@@ -80,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-      
+
       toast.success("Successfully signed in!");
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in");
@@ -102,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) throw error;
-      
+
       toast.success("Account created! You can now sign in.");
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
@@ -114,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
+
       setUser(null);
       setSession(null);
       setUserRole(null);

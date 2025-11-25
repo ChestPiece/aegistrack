@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { notificationService } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,14 +19,8 @@ export default function Notifications() {
 
   const fetchNotifications = async () => {
     try {
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setNotifications(data || []);
+      const data = await notificationService.getAll();
+      setNotifications(data);
     } catch (error: any) {
       toast.error("Failed to load notifications");
     } finally {
@@ -36,13 +30,10 @@ export default function Notifications() {
 
   const markAsRead = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("notifications")
-        .update({ read: true })
-        .eq("id", id);
-
-      if (error) throw error;
-      fetchNotifications();
+      await notificationService.markAsRead(id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      );
     } catch (error: any) {
       toast.error("Failed to mark as read");
     }
@@ -50,15 +41,9 @@ export default function Notifications() {
 
   const markAllAsRead = async () => {
     try {
-      const { error } = await supabase
-        .from("notifications")
-        .update({ read: true })
-        .eq("user_id", user?.id)
-        .eq("read", false);
-
-      if (error) throw error;
+      await notificationService.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       toast.success("All notifications marked as read");
-      fetchNotifications();
     } catch (error: any) {
       toast.error("Failed to mark all as read");
     }
@@ -72,7 +57,9 @@ export default function Notifications() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
           <p className="text-muted-foreground">
-            {unreadCount > 0 ? `You have ${unreadCount} unread notifications` : "All caught up!"}
+            {unreadCount > 0
+              ? `You have ${unreadCount} unread notifications`
+              : "All caught up!"}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -102,10 +89,14 @@ export default function Notifications() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-lg">{notification.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                    <CardTitle className="text-lg">
+                      {notification.title}
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {notification.message}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      {new Date(notification.created_at).toLocaleString()}
+                      {new Date(notification.createdAt).toLocaleString()}
                     </p>
                   </div>
                   {!notification.read && (

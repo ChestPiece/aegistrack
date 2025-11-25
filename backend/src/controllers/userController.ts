@@ -44,9 +44,147 @@ export const getCurrentUser = async (req: AuthRequest, res: Response) => {
 
 export const getAllUsers = async (req: AuthRequest, res: Response) => {
   try {
+    const requesterId = req.user.id;
+    const requester = await User.findOne({ supabaseId: requesterId });
+
+    if (requester?.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admin only." });
+    }
+
     const users = await User.find().sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: "Error fetching users" });
+  }
+};
+
+export const createUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const requesterId = req.user.id;
+    const requester = await User.findOne({ supabaseId: requesterId });
+
+    if (requester?.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admin only." });
+    }
+
+    const { email, fullName, role, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    // Create user in Supabase Auth
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseUrl = process.env.SUPABASE_URL || "";
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return res.status(500).json({ error: "Supabase configuration missing" });
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+        },
+      });
+
+    if (authError) {
+      return res.status(400).json({ error: authError.message });
+    }
+
+    // Create user in MongoDB
+    const newUser = new User({
+      supabaseId: authData.user.id,
+      email,
+      fullName,
+      role: role || "member",
+    });
+
+    await newUser.save();
+    res.status(201).json(newUser);
+  } catch (error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({ error: "Error creating user" });
+  }
+};
+
+export const updateUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const requesterId = req.user.id;
+    const requester = await User.findOne({ supabaseId: requesterId });
+
+    if (requester?.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admin only." });
+    }
+
+    const { id } = req.params;
+    const { fullName, role } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { fullName, role },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ error: "Error updating user" });
+  }
+};
+
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const requesterId = req.user.id;
+    const requester = await User.findOne({ supabaseId: requesterId });
+
+    if (requester?.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admin only." });
+    }
+
+    const { id } = req.params;
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Delete from Supabase Auth
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseUrl = process.env.SUPABASE_URL || "";
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return res.status(500).json({ error: "Supabase configuration missing" });
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(
+      user.supabaseId
+    );
+
+    if (authError) {
+      console.error("Error deleting from Supabase:", authError);
+      // Continue with MongoDB deletion even if Supabase deletion fails
+    }
+
+    // Delete from MongoDB
+    await User.findByIdAndDelete(id);
+
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ error: "Error deleting user" });
   }
 };

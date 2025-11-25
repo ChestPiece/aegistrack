@@ -45,7 +45,12 @@ export const getProjects = async (req: AuthRequest, res: Response) => {
       { $sort: { createdAt: -1 } },
     ]);
 
-    res.json(projects);
+    const transformedProjects = projects.map((project) => ({
+      ...project,
+      id: project._id.toString(),
+    }));
+
+    res.json(transformedProjects);
   } catch (error) {
     res.status(500).json({ error: "Error fetching projects" });
   }
@@ -62,7 +67,7 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       deadline,
       status,
       createdBy: userId,
-      members: [userId], // Creator is automatically a member
+      members: [userId, ...(req.body.members || [])], // Creator + added members
     });
 
     const savedProject = await newProject.save();

@@ -4,7 +4,7 @@ export interface User {
   email: string;
   fullName?: string;
   avatarUrl?: string;
-  role?: "admin" | "user";
+  role?: "admin" | "member";
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +40,7 @@ export interface Task {
 
 export interface Notification {
   id: string;
+  title: string;
   message: string;
   type: "info" | "success" | "warning" | "error";
   read: boolean;

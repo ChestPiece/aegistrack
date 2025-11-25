@@ -1,62 +1,79 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { userService } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, User as UserIcon } from "lucide-react";
 
 export default function Profile() {
-  const { user, userRole } = useAuth();
+  const { user, userRole, userData, refreshUserData } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [fullName, setFullName] = useState("");
+  const [formData, setFormData] = useState({
+    fullName: "",
+    phoneNumber: "",
+    company: "",
+    bio: "",
+    location: "",
+    avatarUrl: "",
+  });
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
+    if (userData) {
+      setFormData({
+        fullName: userData.fullName || "",
+        phoneNumber: userData.phoneNumber || "",
+        company: userData.company || "",
+        bio: userData.bio || "",
+        location: userData.location || "",
+        avatarUrl: userData.avatarUrl || "",
+      });
     }
-  }, [user]);
-
-  const fetchProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user?.id)
-        .single();
-
-      if (error) throw error;
-      setFullName(data.full_name || "");
-    } catch (error: any) {
-      console.error("Error fetching profile:", error);
-    }
-  };
+  }, [userData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ full_name: fullName })
-        .eq("id", user?.id);
-
-      if (error) throw error;
+      await userService.updateProfile(formData);
+      await refreshUserData();
       toast.success("Profile updated successfully");
     } catch (error: any) {
-      toast.error("Failed to update profile");
+      toast.error(error.message || "Failed to update profile");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const getInitials = () => {
+    if (formData.fullName) {
+      return formData.fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return user?.email?.charAt(0).toUpperCase() || "U";
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl">
+    <div className="space-y-6 animate-fade-in max-w-3xl">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
         <p className="text-muted-foreground">Manage your account settings</p>
@@ -67,11 +84,11 @@ export default function Profile() {
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
               <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                {user?.email?.charAt(0).toUpperCase() || "U"}
+                {getInitials()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle>{fullName || "User"}</CardTitle>
+              <CardTitle>{formData.fullName || "User"}</CardTitle>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
               <Badge className="mt-2 capitalize">{userRole}</Badge>
             </div>
@@ -85,19 +102,80 @@ export default function Profile() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="Enter your full name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  placeholder="Enter your phone number"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" value={user?.email || ""} disabled />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company">Company</Label>
+                <Input
+                  id="company"
+                  name="company"
+                  value={formData.company}
+                  onChange={handleChange}
+                  placeholder="Enter your company"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  placeholder="City, Country"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="avatarUrl">Avatar URL</Label>
+                <Input
+                  id="avatarUrl"
+                  name="avatarUrl"
+                  value={formData.avatarUrl}
+                  onChange={handleChange}
+                  placeholder="Image URL"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                name="bio"
+                value={formData.bio}
+                onChange={handleChange}
+                placeholder="Tell us about yourself"
+                rows={4}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" value={user?.email || ""} disabled />
-            </div>
+
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes

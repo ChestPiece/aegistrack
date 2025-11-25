@@ -21,7 +21,7 @@ interface UserStats {
 }
 
 export default function UserDashboard() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [stats, setStats] = useState<UserStats>({
     myTasks: 0,
     completedTasks: 0,
@@ -118,6 +118,13 @@ export default function UserDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Welcome back, {userData?.fullName || "User"}!
+        </h1>
+        <p className="text-muted-foreground">Here's an overview of your work</p>
+      </div>
+
       {loading ? (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

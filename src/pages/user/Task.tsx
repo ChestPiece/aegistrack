@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "lucide-react";
+import { Calendar, CheckSquare, AlertCircle } from "lucide-react";
 import { TaskCardSkeleton } from "@/components/SkeletonLoaders";
 import {
   Select,
@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { taskService } from "@/services/api";
 
@@ -31,6 +33,7 @@ export default function MyTasks() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
 
   useEffect(() => {
     if (user) {
@@ -62,70 +65,184 @@ export default function MyTasks() {
     }
   };
 
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "secondary";
+      case "in_progress":
+        return "default";
+      default:
+        return "outline";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "in_progress":
+        return "In Progress";
+      case "completed":
+        return "Completed";
+      default:
+        return "Pending";
+    }
+  };
+
+  const isOverdue = (deadline?: string) => {
+    if (!deadline) return false;
+    return new Date(deadline) < new Date() && true;
+  };
+
+  const filteredTasks = tasks.filter((task) => {
+    if (filter === "all") return true;
+    if (filter === "active")
+      return task.status === "pending" || task.status === "in_progress";
+    if (filter === "completed") return task.status === "completed";
+    return true;
+  });
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {loading ? (
-        <div className="grid gap-4">
-          <TaskCardSkeleton count={5} />
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {tasks.map((task) => (
-            <Card
-              key={task.id}
-              className="glass hover:shadow-md transition-all"
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-1">
-                    <CardTitle className="text-lg">{task.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {task.projectId?.title || "No project"}
-                    </p>
-                  </div>
-                  <Select
-                    value={task.status}
-                    onValueChange={(value) =>
-                      updateTaskStatus(task.id, value as any)
-                    }
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {task.description && (
-                  <p className="text-sm text-muted-foreground">
-                    {task.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-4 text-sm">
-                  {task.deadline && (
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        {new Date(task.deadline).toLocaleDateString()}
-                      </span>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">My Tasks</h1>
+        <p className="text-muted-foreground">
+          Manage and track your assigned tasks
+        </p>
+      </div>
+
+      <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+        <TabsList>
+          <TabsTrigger value="all">
+            All Tasks
+            <Badge variant="secondary" className="ml-2">
+              {tasks.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="active">
+            Active
+            <Badge variant="secondary" className="ml-2">
+              {
+                tasks.filter(
+                  (t) => t.status === "pending" || t.status === "in_progress"
+                ).length
+              }
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="completed">
+            Completed
+            <Badge variant="secondary" className="ml-2">
+              {tasks.filter((t) => t.status === "completed").length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={filter} className="mt-6">
+          {loading ? (
+            <div className="grid gap-4">
+              <TaskCardSkeleton count={5} />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {filteredTasks.map((task) => (
+                <Card
+                  key={task.id}
+                  className={`glass hover:shadow-md transition-all border-l-4 ${
+                    task.status === "completed"
+                      ? "border-l-green-500"
+                      : task.status === "in_progress"
+                      ? "border-l-blue-500"
+                      : "border-l-gray-400"
+                  }`}
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <CardTitle className="text-lg">{task.title}</CardTitle>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={getStatusVariant(task.status)}>
+                            {getStatusLabel(task.status)}
+                          </Badge>
+                          {task.status !== "completed" &&
+                            isOverdue(task.deadline) && (
+                              <Badge variant="destructive" className="gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Overdue
+                              </Badge>
+                            )}
+                          {task.projectId?.title && (
+                            <Badge variant="outline">
+                              {task.projectId.title}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Select
+                        value={task.status}
+                        onValueChange={(value) =>
+                          updateTaskStatus(task.id, value as any)
+                        }
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="in_progress">
+                            In Progress
+                          </SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                  )}
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {task.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {task.description}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-4 text-sm">
+                      {task.deadline && (
+                        <div
+                          className={`flex items-center gap-1 ${
+                            isOverdue(task.deadline) &&
+                            task.status !== "completed"
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          <Calendar className="h-4 w-4" />
+                          <span>
+                            {new Date(task.deadline).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {filteredTasks.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center py-16">
+                  <CheckSquare className="h-16 w-16 text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    {filter === "completed"
+                      ? "No completed tasks"
+                      : filter === "active"
+                      ? "No active tasks"
+                      : "No tasks yet"}
+                  </h3>
+                  <p className="text-muted-foreground text-center max-w-md">
+                    {filter === "completed"
+                      ? "You haven't completed any tasks yet. Keep working on your active tasks!"
+                      : filter === "active"
+                      ? "You don't have any active tasks. Great job staying on top of everything!"
+                      : "You don't have any tasks assigned. Check back later or reach out to your project manager."}
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-          {tasks.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No tasks assigned yet</p>
+              )}
             </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

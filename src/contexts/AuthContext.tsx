@@ -1,26 +1,30 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { userService } from "@/services/api";
+import { User } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface AuthContextType {
-  user: User | null;
+  user: SupabaseUser | null;
   session: Session | null;
   userRole: "admin" | "member" | null;
+  userData: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<"admin" | "member" | null>(null);
+  const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -38,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }, 0);
       } else {
         setUserRole(null);
+        setUserData(null);
       }
     });
 
@@ -59,11 +64,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const user = await userService.getCurrent();
       setUserRole(user.role || "member");
+      setUserData(user);
     } catch (error: any) {
       console.error("Error fetching user role:", error);
       setUserRole("member");
+      setUserData(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshUserData = async () => {
+    try {
+      const user = await userService.getCurrent();
+      setUserRole(user.role || "member");
+      setUserData(user);
+    } catch (error: any) {
+      console.error("Error refreshing user data:", error);
     }
   };
 
@@ -113,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setSession(null);
       setUserRole(null);
+      setUserData(null);
       navigate("/auth/login");
       toast.success("Signed out successfully");
     } catch (error: any) {
@@ -123,7 +141,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, userRole, loading, signIn, signUp, signOut }}
+      value={{
+        user,
+        session,
+        userRole,
+        userData,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        refreshUserData,
+      }}
     >
       {children}
     </AuthContext.Provider>

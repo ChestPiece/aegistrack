@@ -74,6 +74,14 @@ export const userService = {
   sync: (): Promise<User> =>
     api.post<User, Record<string, never>>("/users/sync", {}),
   getCurrent: (): Promise<User> => api.get<User>("/users/me"),
+  updateProfile: (data: {
+    fullName?: string;
+    phoneNumber?: string;
+    company?: string;
+    bio?: string;
+    location?: string;
+    avatarUrl?: string;
+  }): Promise<User> => api.put<User, typeof data>("/users/profile", data),
   getAll: (): Promise<User[]> => api.get<User[]>("/users"),
   create: (data: {
     email: string;

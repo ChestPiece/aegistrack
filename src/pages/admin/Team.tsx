@@ -63,6 +63,10 @@ export default function Team() {
 
       setMembers(users);
       setTasks(allTasks);
+    } catch (error: any) {
+      console.error("Error fetching members:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -124,11 +128,7 @@ export default function Team() {
 
   const openDeleteDialog = (user: User) => {
     setSelectedUser(user);
-    setIsDeleteDialogOpen(true); catch (error: any) {
-      console.error("Error fetching members:", error);
-    } finally {
-      setLoading(false);
-    }
+    setIsDeleteDialogOpen(true);
   };
 
   return (

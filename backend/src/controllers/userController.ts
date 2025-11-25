@@ -143,6 +143,34 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const { fullName, phoneNumber, company, bio, location, avatarUrl } =
+      req.body;
+
+    const user = await User.findOne({ supabaseId: userId });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update only the fields that are provided
+    if (fullName !== undefined) user.fullName = fullName;
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
+    if (company !== undefined) user.company = company;
+    if (bio !== undefined) user.bio = bio;
+    if (location !== undefined) user.location = location;
+    if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+
+    await user.save();
+    res.json(user);
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ error: "Error updating profile" });
+  }
+};
+
 export const deleteUser = async (req: AuthRequest, res: Response) => {
   try {
     const requesterId = req.user.id;

@@ -4,6 +4,10 @@ export interface User {
   email: string;
   fullName?: string;
   avatarUrl?: string;
+  phoneNumber?: string;
+  company?: string;
+  bio?: string;
+  location?: string;
   role?: "admin" | "member";
   createdAt: string;
   updatedAt: string;

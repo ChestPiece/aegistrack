@@ -6,6 +6,7 @@ import {
   getAllUsers,
   createUser,
   updateUser,
+  updateProfile,
   deleteUser,
 } from "../controllers/userController";
 
@@ -13,6 +14,7 @@ const router = express.Router();
 
 router.post("/sync", authenticateUser, syncUser);
 router.get("/me", authenticateUser, getCurrentUser);
+router.put("/profile", authenticateUser, updateProfile);
 router.get("/", authenticateUser, getAllUsers);
 router.post("/", authenticateUser, createUser);
 router.put("/:id", authenticateUser, updateUser);

@@ -30,7 +30,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
-  const { user, userRole, signOut } = useAuth();
+  const { user, userRole, userData, signOut } = useAuth();
   const collapsed = state === "collapsed";
 
   const isActive = (path: string) => location.pathname === path;
@@ -124,13 +124,17 @@ export function AppSidebar() {
           >
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary text-primary-foreground">
-                {user?.email?.charAt(0).toUpperCase() || "U"}
+                {userData?.fullName?.charAt(0).toUpperCase() ||
+                  user?.email?.charAt(0).toUpperCase() ||
+                  "U"}
               </AvatarFallback>
             </Avatar>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user?.email}</p>
-                <p className="text-xs text-muted-foreground capitalize">
+                <p className="text-sm font-medium truncate">
+                  {userData?.fullName || user?.email || "User"}
+                </p>
+                <p className="text-xs text-muted-foreground capitalize truncate">
                   {userRole}
                 </p>
               </div>

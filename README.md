@@ -1,73 +1,141 @@
-# Welcome to your Lovable project
+# AegisTrack
 
-## Project info
+A comprehensive project management system built with React, TypeScript, and MongoDB.
 
-**URL**: https://lovable.dev/projects/b0113c05-2d34-4635-94f1-287bec177d43
+## Project Overview
 
-## How can I edit this code?
+AegisTrack is a modern project management platform that enables teams to collaborate effectively on projects and tasks. It features role-based access control, real-time notifications, and a clean, intuitive interface.
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- **User Management**: Role-based access (Admin/Member) with full profile management
+- **Project Management**: Create, update, and track projects with status workflows
+- **Task Management**: Assign and manage tasks with deadlines and status tracking
+- **Dashboard Analytics**: Visual insights into project and task progress
+- **Notifications**: Real-time notification system for important updates
+- **Responsive Design**: Modern UI that works on all devices
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b0113c05-2d34-4635-94f1-287bec177d43) and start prompting.
+## Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+### Frontend
 
-**Use your preferred IDE**
+- **React** with TypeScript
+- **Vite** for build tooling
+- **TailwindCSS** for styling
+- **shadcn/ui** for UI components
+- **React Router** for navigation
+- **Supabase** for authentication
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Backend
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Node.js** with Express
+- **TypeScript**
+- **MongoDB** with Mongoose ODM
+- **JWT** authentication
 
-Follow these steps:
+## Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Prerequisites
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+- Node.js 16+ installed
+- MongoDB instance running
+- Supabase account for authentication
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+1. Clone the repository:
+
+```bash
+git clone <repository-url>
+cd aegistrack
+```
+
+2. Install frontend dependencies:
+
+```bash
+npm install
+```
+
+3. Install backend dependencies:
+
+```bash
+cd backend
+npm install
+```
+
+4. Configure environment variables:
+
+Create `.env` in the root directory:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_API_URL=http://localhost:5000/api
+```
+
+Create `backend/.env`:
+
+```env
+MONGODB_URI=your_mongodb_connection_string
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+PORT=5000
+```
+
+### Running the Application
+
+1. Start the backend server:
+
+```bash
+cd backend
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+2. In a new terminal, start the frontend:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run dev
+```
 
-**Use GitHub Codespaces**
+The application will be available at `http://localhost:8080`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Project Structure
 
-## What technologies are used for this project?
+```
+aegistrack/
+├── src/                    # Frontend source code
+│   ├── components/         # React components
+│   ├── pages/             # Page components
+│   ├── contexts/          # React contexts
+│   ├── services/          # API services
+│   └── types/             # TypeScript type definitions
+├── backend/               # Backend source code
+│   └── src/
+│       ├── controllers/   # Request handlers
+│       ├── models/        # MongoDB models
+│       ├── routes/        # API routes
+│       └── middleware/    # Custom middleware
+└── public/                # Static assets
+```
 
-This project is built with:
+## Available Scripts
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Frontend
 
-## How can I deploy this project?
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
 
-Simply open [Lovable](https://lovable.dev/projects/b0113c05-2d34-4635-94f1-287bec177d43) and click on Share -> Publish.
+### Backend
 
-## Can I connect a custom domain to my Lovable project?
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Compile TypeScript
+- `npm start` - Start production server
 
-Yes, you can!
+## License
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+MIT License - feel free to use this project for your own purposes.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

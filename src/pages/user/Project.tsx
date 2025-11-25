@@ -75,40 +75,55 @@ export default function MyProjects() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
+      <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">My Projects</h1>
         <p className="text-muted-foreground">Projects you're contributing to</p>
       </div>
 
-      <Tabs value={filter} onValueChange={setFilter}>
-        <TabsList>
-          <TabsTrigger value="all">
+      <Tabs value={filter} onValueChange={setFilter} className="w-full">
+        <TabsList className="w-full justify-start overflow-x-auto flex-nowrap">
+          <TabsTrigger value="all" className="flex items-center gap-2">
             All
-            <Badge variant="secondary" className="ml-2">
+            <Badge
+              variant="secondary"
+              className="rounded-full px-2 py-0 text-xs"
+            >
               {projects.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="active">
+          <TabsTrigger value="active" className="flex items-center gap-2">
             Active
-            <Badge variant="secondary" className="ml-2">
+            <Badge
+              variant="secondary"
+              className="rounded-full px-2 py-0 text-xs"
+            >
               {projects.filter((p) => p.status === "active").length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="planning">
+          <TabsTrigger value="planning" className="flex items-center gap-2">
             Planning
-            <Badge variant="secondary" className="ml-2">
+            <Badge
+              variant="secondary"
+              className="rounded-full px-2 py-0 text-xs"
+            >
               {projects.filter((p) => p.status === "planning").length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="completed">
+          <TabsTrigger value="completed" className="flex items-center gap-2">
             Completed
-            <Badge variant="secondary" className="ml-2">
+            <Badge
+              variant="secondary"
+              className="rounded-full px-2 py-0 text-xs"
+            >
               {projects.filter((p) => p.status === "completed").length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="on_hold">
+          <TabsTrigger value="on_hold" className="flex items-center gap-2">
             On Hold
-            <Badge variant="secondary" className="ml-2">
+            <Badge
+              variant="secondary"
+              className="rounded-full px-2 py-0 text-xs"
+            >
               {projects.filter((p) => p.status === "on_hold").length}
             </Badge>
           </TabsTrigger>
@@ -116,11 +131,11 @@ export default function MyProjects() {
 
         <TabsContent value={filter} className="mt-6">
           {loading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <ProjectCardSkeleton count={6} />
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <ProjectCardSkeleton count={8} />
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredProjects.map((project) => {
                 const totalTasks = project.tasks?.length || 0;
                 const completedTasks =
@@ -211,14 +226,14 @@ export default function MyProjects() {
                 );
               })}
               {filteredProjects.length === 0 && (
-                <div className="col-span-full flex flex-col items-center justify-center py-20">
-                  <FolderKanban className="h-20 w-20 text-muted-foreground/50 mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">
+                <div className="col-span-full flex flex-col items-center justify-center min-h-[400px] py-12">
+                  <FolderKanban className="h-24 w-24 text-muted-foreground/40 mb-6" />
+                  <h3 className="text-2xl font-semibold mb-3">
                     {filter === "all"
                       ? "No projects yet"
                       : `No ${getStatusLabel(filter).toLowerCase()} projects`}
                   </h3>
-                  <p className="text-muted-foreground text-center max-w-md">
+                  <p className="text-muted-foreground text-center max-w-md leading-relaxed">
                     {filter === "all"
                       ? "You haven't been added to any projects yet. Once a project manager adds you to a project, it will appear here."
                       : `You don't have any ${getStatusLabel(

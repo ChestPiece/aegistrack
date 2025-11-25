@@ -7,7 +7,8 @@
     "start": "node dist/server.js",
     "dev": "nodemon src/server.ts",
     "build": "tsc",
-    "create-user": "ts-node --project tsconfig.scripts.json scripts/create_verified_user.ts"
+    "create-user": "ts-node --project tsconfig.scripts.json scripts/create_verified_user.ts",
+    "init-db": "ts-node --project tsconfig.scripts.json scripts/initDatabase.ts"
   },
   "keywords": [],
   "author": "",

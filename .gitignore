@@ -30,6 +30,6 @@ dist-ssr
 .env.production.local
 
 # Project-specific folders
-src/prompts/
-src/rules/
-docs/
+# src/prompts/
+# src/rules/
+# docs/

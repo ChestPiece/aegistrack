@@ -1,12 +1,16 @@
 import { supabase } from "@/integrations/supabase/client";
+import { Project, Task, User } from "@/types";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
 }
 
-const apiRequest = async (endpoint: string, options: RequestOptions = {}) => {
+const apiRequest = async <T>(
+  endpoint: string,
+  options: RequestOptions = {}
+): Promise<T> => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -36,31 +40,39 @@ const apiRequest = async (endpoint: string, options: RequestOptions = {}) => {
 };
 
 export const api = {
-  get: (endpoint: string) => apiRequest(endpoint, { method: "GET" }),
-  post: (endpoint: string, body: any) =>
-    apiRequest(endpoint, { method: "POST", body: JSON.stringify(body) }),
-  put: (endpoint: string, body: any) =>
-    apiRequest(endpoint, { method: "PUT", body: JSON.stringify(body) }),
-  delete: (endpoint: string) => apiRequest(endpoint, { method: "DELETE" }),
+  get: <T>(endpoint: string): Promise<T> =>
+    apiRequest<T>(endpoint, { method: "GET" }),
+  post: <T, B = unknown>(endpoint: string, body: B): Promise<T> =>
+    apiRequest<T>(endpoint, { method: "POST", body: JSON.stringify(body) }),
+  put: <T, B = unknown>(endpoint: string, body: B): Promise<T> =>
+    apiRequest<T>(endpoint, { method: "PUT", body: JSON.stringify(body) }),
+  delete: <T>(endpoint: string): Promise<T> =>
+    apiRequest<T>(endpoint, { method: "DELETE" }),
 };
 
 export const projectService = {
-  getAll: () => api.get("/projects"),
-  getById: (id: string) => api.get(`/projects/${id}`),
-  create: (data: any) => api.post("/projects", data),
-  update: (id: string, data: any) => api.put(`/projects/${id}`, data),
-  delete: (id: string) => api.delete(`/projects/${id}`),
+  getAll: (): Promise<Project[]> => api.get<Project[]>("/projects"),
+  getById: (id: string): Promise<Project> =>
+    api.get<Project>(`/projects/${id}`),
+  create: (data: Partial<Project>): Promise<Project> =>
+    api.post<Project, Partial<Project>>("/projects", data),
+  update: (id: string, data: Partial<Project>): Promise<Project> =>
+    api.put<Project, Partial<Project>>(`/projects/${id}`, data),
+  delete: (id: string): Promise<void> => api.delete<void>(`/projects/${id}`),
 };
 
 export const taskService = {
-  getAll: () => api.get("/tasks"),
-  create: (data: any) => api.post("/tasks", data),
-  update: (id: string, data: any) => api.put(`/tasks/${id}`, data),
-  delete: (id: string) => api.delete(`/tasks/${id}`),
+  getAll: (): Promise<Task[]> => api.get<Task[]>("/tasks"),
+  create: (data: Partial<Task>): Promise<Task> =>
+    api.post<Task, Partial<Task>>("/tasks", data),
+  update: (id: string, data: Partial<Task>): Promise<Task> =>
+    api.put<Task, Partial<Task>>(`/tasks/${id}`, data),
+  delete: (id: string): Promise<void> => api.delete<void>(`/tasks/${id}`),
 };
 
 export const userService = {
-  sync: () => api.post("/users/sync", {}),
-  getCurrent: () => api.get("/users/me"),
-  getAll: () => api.get("/users"),
+  sync: (): Promise<User> =>
+    api.post<User, Record<string, never>>("/users/sync", {}),
+  getCurrent: (): Promise<User> => api.get<User>("/users/me"),
+  getAll: (): Promise<User[]> => api.get<User[]>("/users"),
 };

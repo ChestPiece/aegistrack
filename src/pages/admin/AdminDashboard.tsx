@@ -9,6 +9,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Task, Project, User } from "@/types";
+import { getErrorMessage } from "@/lib/errors";
 
 interface DashboardStats {
   totalProjects: number;
@@ -43,13 +45,13 @@ export default function AdminDashboard() {
       ]);
 
       const completedTasks = tasks.filter(
-        (t: any) => t.status === "completed"
+        (t: Task) => t.status === "completed"
       ).length;
       const inProgressTasks = tasks.filter(
-        (t: any) => t.status === "in_progress"
+        (t: Task) => t.status === "in_progress"
       ).length;
       const overdueTasks = tasks.filter(
-        (t: any) =>
+        (t: Task) =>
           t.deadline &&
           new Date(t.deadline) < new Date() &&
           t.status !== "completed"
@@ -64,7 +66,7 @@ export default function AdminDashboard() {
         totalMembers: users.length,
       });
     } catch (error) {
-      console.error("Error fetching stats:", error);
+      console.error("Error fetching stats:", getErrorMessage(error));
     } finally {
       setLoading(false);
     }

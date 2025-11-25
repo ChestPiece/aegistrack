@@ -27,4 +27,19 @@ const ProjectSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for performance (non-unique fields only, unique fields auto-indexed)
+ProjectSchema.index({ createdBy: 1 });
+ProjectSchema.index({ members: 1 });
+ProjectSchema.index({ status: 1 });
+
+// Transform _id to id when converting to JSON
+ProjectSchema.set("toJSON", {
+  transform: (_doc: any, ret: any) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  },
+});
+
 export default mongoose.model<IProject>("Project", ProjectSchema);

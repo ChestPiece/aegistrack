@@ -29,4 +29,21 @@ const TaskSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Indexes for performance
+TaskSchema.index({ projectId: 1 });
+TaskSchema.index({ assignedTo: 1 });
+TaskSchema.index({ createdBy: 1 });
+TaskSchema.index({ status: 1 });
+TaskSchema.index({ deadline: 1 });
+
+// Transform _id to id when converting to JSON
+TaskSchema.set("toJSON", {
+  transform: (_doc: any, ret: any) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  },
+});
+
 export default mongoose.model<ITask>("Task", TaskSchema);

@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { Project, Task, User, Notification } from "@/types";
+import { Project, Task, User, Notification, Comment } from "@/types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -110,4 +110,13 @@ export const notificationService = {
       "/notifications/read-all",
       {}
     ),
+};
+
+export const commentService = {
+  getTaskComments: (taskId: string): Promise<Comment[]> =>
+    api.get<Comment[]>(`/comments/task/${taskId}`),
+  addTaskComment: (taskId: string, content: string): Promise<Comment> =>
+    api.post<Comment, { content: string }>(`/comments/task/${taskId}`, {
+      content,
+    }),
 };

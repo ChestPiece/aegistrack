@@ -69,20 +69,27 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     if (!updatedTask) {
       return res.status(404).json({ error: "Task not found" });
     }
-    res.json(updatedTask);
 
-    // Notify if status changed or reassigned
+    // Notify if status changed
     if (req.body.status && req.body.status !== updatedTask.status) {
-      // Notify creator
-      if (updatedTask.createdBy !== req.user.id) {
+      const updater = await User.findOne({ supabaseId: req.user.id });
+      const notifyUsers = new Set<string>([updatedTask.createdBy]);
+      if (updatedTask.assignedTo) notifyUsers.add(updatedTask.assignedTo);
+      notifyUsers.delete(req.user.id); // Don't notify yourself
+
+      for (const userId of notifyUsers) {
         await Notification.create({
-          userId: updatedTask.createdBy,
+          userId,
           title: "Task Status Updated",
-          message: `Task "${updatedTask.title}" status changed to ${req.body.status}`,
+          message: `${updater?.fullName || "Someone"} changed "${
+            updatedTask.title
+          }" to ${req.body.status.replace("_", " ")}`,
           type: "info",
         });
       }
     }
+
+    res.json(updatedTask);
   } catch (error) {
     res.status(500).json({ error: "Error updating task" });
   }

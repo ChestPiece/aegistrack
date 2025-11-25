@@ -51,6 +51,20 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface Comment {
+  id: string;
+  taskId: string;
+  userId: string;
+  content: string;
+  user: {
+    fullName: string;
+    email: string;
+    role: "admin" | "member";
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Type helpers
 export type TaskStatus = Task["status"];
 export type ProjectStatus = Project["status"];

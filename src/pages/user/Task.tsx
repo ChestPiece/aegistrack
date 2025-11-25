@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, CheckSquare, AlertCircle } from "lucide-react";
+import { Calendar, CheckSquare, AlertCircle, ChevronDown } from "lucide-react";
 import { TaskCardSkeleton } from "@/components/SkeletonLoaders";
 import {
   Select,
@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { CommentSection } from "@/components/CommentSection";
 import { toast } from "sonner";
 import { taskService } from "@/services/api";
 
@@ -34,6 +41,7 @@ export default function MyTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -100,6 +108,18 @@ export default function MyTasks() {
     return true;
   });
 
+  const toggleExpanded = (taskId: string) => {
+    setExpandedTasks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -143,82 +163,107 @@ export default function MyTasks() {
           ) : (
             <div className="grid gap-4">
               {filteredTasks.map((task) => (
-                <Card
+                <Collapsible
                   key={task.id}
-                  className={`glass hover:shadow-md transition-all border-l-4 ${
-                    task.status === "completed"
-                      ? "border-l-green-500"
-                      : task.status === "in_progress"
-                      ? "border-l-blue-500"
-                      : "border-l-gray-400"
-                  }`}
+                  open={expandedTasks.has(task.id)}
+                  onOpenChange={() => toggleExpanded(task.id)}
                 >
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <CardTitle className="text-lg">{task.title}</CardTitle>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant={getStatusVariant(task.status)}>
-                            {getStatusLabel(task.status)}
-                          </Badge>
-                          {task.status !== "completed" &&
-                            isOverdue(task.deadline) && (
-                              <Badge variant="destructive" className="gap-1">
-                                <AlertCircle className="h-3 w-3" />
-                                Overdue
+                  <Card
+                    className={`glass hover:shadow-md transition-all border-l-4 ${
+                      task.status === "completed"
+                        ? "border-l-green-500"
+                        : task.status === "in_progress"
+                        ? "border-l-blue-500"
+                        : "border-l-gray-400"
+                    }`}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <CardTitle className="text-lg">
+                            {task.title}
+                          </CardTitle>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant={getStatusVariant(task.status)}>
+                              {getStatusLabel(task.status)}
+                            </Badge>
+                            {task.status !== "completed" &&
+                              isOverdue(task.deadline) && (
+                                <Badge variant="destructive" className="gap-1">
+                                  <AlertCircle className="h-3 w-3" />
+                                  Overdue
+                                </Badge>
+                              )}
+                            {task.projectId?.title && (
+                              <Badge variant="outline">
+                                {task.projectId.title}
                               </Badge>
                             )}
-                          {task.projectId?.title && (
-                            <Badge variant="outline">
-                              {task.projectId.title}
-                            </Badge>
-                          )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={task.status}
+                            onValueChange={(value) =>
+                              updateTaskStatus(task.id, value as any)
+                            }
+                          >
+                            <SelectTrigger className="w-40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="in_progress">
+                                In Progress
+                              </SelectItem>
+                              <SelectItem value="completed">
+                                Completed
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="gap-1">
+                              <ChevronDown
+                                className={`h-4 w-4 transition-transform ${
+                                  expandedTasks.has(task.id) ? "rotate-180" : ""
+                                }`}
+                              />
+                              {expandedTasks.has(task.id) ? "Hide" : "Details"}
+                            </Button>
+                          </CollapsibleTrigger>
                         </div>
                       </div>
-                      <Select
-                        value={task.status}
-                        onValueChange={(value) =>
-                          updateTaskStatus(task.id, value as any)
-                        }
-                      >
-                        <SelectTrigger className="w-40">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in_progress">
-                            In Progress
-                          </SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {task.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {task.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-sm">
-                      {task.deadline && (
-                        <div
-                          className={`flex items-center gap-1 ${
-                            isOverdue(task.deadline) &&
-                            task.status !== "completed"
-                              ? "text-destructive"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            {new Date(task.deadline).toLocaleDateString()}
-                          </span>
-                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {task.description}
+                        </p>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="flex items-center gap-4 text-sm">
+                        {task.deadline && (
+                          <div
+                            className={`flex items-center gap-1 ${
+                              isOverdue(task.deadline) &&
+                              task.status !== "completed"
+                                ? "text-destructive"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              {new Date(task.deadline).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <CollapsibleContent>
+                        <CommentSection taskId={task.id} />
+                      </CollapsibleContent>
+                    </CardContent>
+                  </Card>
+                </Collapsible>
               ))}
               {filteredTasks.length === 0 && (
                 <div className="col-span-full flex flex-col items-center justify-center py-16">

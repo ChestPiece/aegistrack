@@ -188,8 +188,8 @@ export default function Tasks() {
                   </SelectTrigger>
                   <SelectContent>
                     {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.full_name || user.email}
+                      <SelectItem key={user.id} value={user.supabaseId}>
+                        {user.fullName || user.email}
                       </SelectItem>
                     ))}
                   </SelectContent>

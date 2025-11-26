@@ -119,3 +119,58 @@ export const deleteProject = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: "Error deleting project" });
   }
 };
+
+export const addProjectMembers = async (req: AuthRequest, res: Response) => {
+  try {
+    const { memberIds } = req.body;
+
+    if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
+      return res.status(400).json({ error: "memberIds array is required" });
+    }
+
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    // Add only unique members (avoid duplicates)
+    const uniqueNewMembers = memberIds.filter(
+      (id) => !project.members.includes(id)
+    );
+
+    if (uniqueNewMembers.length === 0) {
+      return res.status(400).json({ error: "All members already in project" });
+    }
+
+    project.members.push(...uniqueNewMembers);
+    const savedProject = await project.save();
+
+    res.json(savedProject);
+  } catch (error) {
+    res.status(500).json({ error: "Error adding members to project" });
+  }
+};
+
+export const removeProjectMember = async (req: AuthRequest, res: Response) => {
+  try {
+    const { memberId } = req.params;
+
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    // Check if member exists in project
+    if (!project.members.includes(memberId)) {
+      return res.status(400).json({ error: "Member not found in project" });
+    }
+
+    // Remove the member
+    project.members = project.members.filter((id) => id !== memberId);
+    const savedProject = await project.save();
+
+    res.json(savedProject);
+  } catch (error) {
+    res.status(500).json({ error: "Error removing member from project" });
+  }
+};

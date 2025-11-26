@@ -56,6 +56,23 @@ export default function Tasks() {
       console.log("Fetched users:", users);
       console.log("Fetched tasks:", tasks);
 
+      // Debug: Check user data structure
+      if (users && users.length > 0) {
+        console.log("First user structure:", users[0]);
+        console.log(
+          "User supabaseIds:",
+          users.map((u) => u.supabaseId)
+        );
+      }
+
+      // Debug: Check task assignment data
+      if (tasks && tasks.length > 0) {
+        console.log(
+          "Task assignedTo values:",
+          tasks.map((t) => ({ id: t.id, assignedTo: t.assignedTo }))
+        );
+      }
+
       setTasks(tasks || []);
       setProjects(projects || []);
       setUsers(users || []);
@@ -92,7 +109,10 @@ export default function Tasks() {
       await taskService.create({
         ...formData,
         deadline: formData.deadline || null,
-        assignedTo: formData.assigned_to || null,
+        assignedTo:
+          formData.assigned_to === "__unassigned__"
+            ? null
+            : formData.assigned_to || null,
         projectId: formData.project_id,
       });
 
@@ -219,14 +239,14 @@ export default function Tasks() {
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
+                      <SelectItem value="__unassigned__">Unassigned</SelectItem>
                       {projectMembers.map((user) => (
                         <SelectItem key={user.id} value={user.supabaseId}>
                           {user.fullName || user.email}
                         </SelectItem>
                       ))}
                       {projectMembers.length === 0 && formData.project_id && (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="__no_members__" disabled>
                           No members in this project
                         </SelectItem>
                       )}
@@ -325,11 +345,24 @@ export default function Tasks() {
                 {task.assignedTo ? (
                   <span className="text-muted-foreground">
                     Assigned to:{" "}
-                    {users.find((u) => u.supabaseId === task.assignedTo)
-                      ?.fullName ||
-                      users.find((u) => u.supabaseId === task.assignedTo)
-                        ?.email ||
-                      "Unknown User"}
+                    {(() => {
+                      const assignedUser = users.find(
+                        (u) => u.supabaseId === task.assignedTo
+                      );
+                      if (!assignedUser) {
+                        console.warn(
+                          `User not found for task ${task.id}, assignedTo: ${task.assignedTo}`
+                        );
+                        console.warn(
+                          "Available user IDs:",
+                          users.map((u) => u.supabaseId)
+                        );
+                        return "Unknown User";
+                      }
+                      return (
+                        assignedUser.fullName || assignedUser.email || "No Name"
+                      );
+                    })()}
                   </span>
                 ) : (
                   <span className="text-muted-foreground">Unassigned</span>

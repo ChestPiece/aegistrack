@@ -3,7 +3,7 @@ import { projectService, userService } from "@/services/api";
 import { User } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Users } from "lucide-react";
+import { Plus, Calendar, Users, UserPlus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -33,6 +33,9 @@ export default function Projects() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [memberDialogOpen, setMemberDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [memberSearchTerm, setMemberSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -102,6 +105,56 @@ export default function Projects() {
       default:
         return "outline";
     }
+  };
+
+  const openMemberDialog = (project: any) => {
+    setSelectedProject(project);
+    setMemberDialogOpen(true);
+    setMemberSearchTerm("");
+  };
+
+  const handleAddMember = async (userId: string) => {
+    if (!selectedProject) return;
+
+    try {
+      await projectService.addMembers(selectedProject.id, [userId]);
+      toast.success("Member added successfully");
+      fetchProjects();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add member");
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!selectedProject) return;
+
+    try {
+      await projectService.removeMember(selectedProject.id, userId);
+      toast.success("Member removed successfully");
+      fetchProjects();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to remove member");
+    }
+  };
+
+  const getCurrentMembers = () => {
+    if (!selectedProject) return [];
+    return users.filter((user) =>
+      selectedProject.members?.includes(user.supabaseId)
+    );
+  };
+
+  const getAvailableMembers = () => {
+    if (!selectedProject) return [];
+    const filtered = users.filter(
+      (user) => !selectedProject.members?.includes(user.supabaseId)
+    );
+    if (!memberSearchTerm) return filtered;
+    return filtered.filter(
+      (user) =>
+        user.fullName?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(memberSearchTerm.toLowerCase())
+    );
   };
 
   return (
@@ -231,9 +284,19 @@ export default function Projects() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-lg">{project.title}</CardTitle>
-                  <Badge variant={getStatusColor(project.status)}>
-                    {project.status.replace("_", " ")}
-                  </Badge>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openMemberDialog(project)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                    <Badge variant={getStatusColor(project.status)}>
+                      {project.status.replace("_", " ")}
+                    </Badge>
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground line-clamp-2">
                   {project.description || "No description"}
@@ -285,6 +348,120 @@ export default function Projects() {
           </p>
         </div>
       )}
+
+      {/* Member Management Dialog */}
+      <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Manage Project Members</DialogTitle>
+            <DialogDescription>{selectedProject?.title}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Current Members */}
+            <div className="space-y-2">
+              <Label>Current Members ({getCurrentMembers().length})</Label>
+              <ScrollArea className="h-48 w-full rounded-md border">
+                <div className="p-4 space-y-2">
+                  {getCurrentMembers().map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-xs font-medium">
+                            {(user.fullName || user.email)
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {user.fullName || user.email}
+                          </p>
+                          {user.fullName && (
+                            <p className="text-xs text-muted-foreground">
+                              {user.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveMember(user.supabaseId)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {getCurrentMembers().length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      No members in this project
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Add Members */}
+            <div className="space-y-2">
+              <Label>Add Members</Label>
+              <Input
+                placeholder="Search by name or email..."
+                value={memberSearchTerm}
+                onChange={(e) => setMemberSearchTerm(e.target.value)}
+                className="mb-2"
+              />
+              <ScrollArea className="h-48 w-full rounded-md border">
+                <div className="p-4 space-y-2">
+                  {getAvailableMembers().map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-xs font-medium">
+                            {(user.fullName || user.email)
+                              .charAt(0)
+                              .toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {user.fullName || user.email}
+                          </p>
+                          {user.fullName && (
+                            <p className="text-xs text-muted-foreground">
+                              {user.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddMember(user.supabaseId)}
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  ))}
+                  {getAvailableMembers().length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      {memberSearchTerm
+                        ? "No users found"
+                        : "All users are already members"}
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

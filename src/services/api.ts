@@ -59,6 +59,12 @@ export const projectService = {
   update: (id: string, data: Partial<Project>): Promise<Project> =>
     api.put<Project, Partial<Project>>(`/projects/${id}`, data),
   delete: (id: string): Promise<void> => api.delete<void>(`/projects/${id}`),
+  addMembers: (id: string, memberIds: string[]): Promise<Project> =>
+    api.post<Project, { memberIds: string[] }>(`/projects/${id}/members`, {
+      memberIds,
+    }),
+  removeMember: (id: string, memberId: string): Promise<Project> =>
+    api.delete<Project>(`/projects/${id}/members/${memberId}`),
 };
 
 export const taskService = {

@@ -1,5 +1,5 @@
 import express from "express";
-import { authenticateUser } from "../middleware/auth";
+import { authenticateUser } from "../../shared/middleware/auth.middleware";
 import {
   getProjects,
   createProject,
@@ -8,7 +8,7 @@ import {
   deleteProject,
   addProjectMembers,
   removeProjectMember,
-} from "../controllers/projectController";
+} from "./project.controller";
 
 const router = express.Router();
 

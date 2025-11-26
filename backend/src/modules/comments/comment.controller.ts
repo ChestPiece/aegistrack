@@ -1,9 +1,9 @@
 import { Response } from "express";
-import { AuthRequest } from "../middleware/auth";
-import Comment from "../models/Comment";
-import Task from "../models/Task";
-import User from "../models/User";
-import Notification from "../models/Notification";
+import { AuthRequest } from "../../shared/middleware/auth.middleware";
+import Comment from "./comment.model";
+import Task from "../tasks/task.model";
+import User from "../users/user.model";
+import Notification from "../notifications/notification.model";
 
 // Get comments for a task
 export const getTaskComments = async (req: AuthRequest, res: Response) => {

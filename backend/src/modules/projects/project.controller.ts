@@ -1,7 +1,7 @@
 import { Response } from "express";
-import { AuthRequest } from "../middleware/auth";
-import Project from "../models/Project";
-import User from "../models/User";
+import { AuthRequest } from "../../shared/middleware/auth.middleware";
+import Project from "./project.model";
+import User from "../users/user.model";
 
 export const getProjects = async (req: AuthRequest, res: Response) => {
   try {

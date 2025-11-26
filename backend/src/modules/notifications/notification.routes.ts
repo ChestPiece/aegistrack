@@ -3,8 +3,8 @@ import {
   getNotifications,
   markAsRead,
   markAllAsRead,
-} from "../controllers/notificationController";
-import { authenticateUser } from "../middleware/auth";
+} from "./notification.controller";
+import { authenticateUser } from "../../shared/middleware/auth.middleware";
 
 const router = express.Router();
 

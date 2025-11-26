@@ -1,6 +1,7 @@
 import { Response } from "express";
-import { AuthRequest } from "../middleware/auth";
-import User from "../models/User";
+import { AuthRequest } from "../../shared/middleware/auth.middleware";
+import User from "./user.model";
+import { supabase } from "../../config/supabase";
 
 export const syncUser = async (req: AuthRequest, res: Response) => {
   try {
@@ -76,19 +77,8 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    // Create user in Supabase Auth
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabaseUrl = process.env.SUPABASE_URL || "";
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return res.status(500).json({ error: "Supabase configuration missing" });
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
     const { data: authData, error: authError } =
-      await supabaseAdmin.auth.admin.createUser({
+      await supabase.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
@@ -190,18 +180,7 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Delete from Supabase Auth
-    const { createClient } = await import("@supabase/supabase-js");
-    const supabaseUrl = process.env.SUPABASE_URL || "";
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return res.status(500).json({ error: "Supabase configuration missing" });
-    }
-
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(
+    const { error: authError } = await supabase.auth.admin.deleteUser(
       user.supabaseId
     );
 

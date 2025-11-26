@@ -1,9 +1,6 @@
 import express from "express";
-import { authenticateUser } from "../middleware/auth";
-import {
-  getTaskComments,
-  addTaskComment,
-} from "../controllers/commentController";
+import { authenticateUser } from "../../shared/middleware/auth.middleware";
+import { getTaskComments, addTaskComment } from "./comment.controller";
 
 const router = express.Router();
 

@@ -51,10 +51,15 @@ export default function Tasks() {
         userService.getAll(),
       ]);
 
+      console.log("Fetched projects:", projects);
+      console.log("Fetched users:", users);
+      console.log("Fetched tasks:", tasks);
+
       setTasks(tasks || []);
       setProjects(projects || []);
       setUsers(users || []);
     } catch (error: any) {
+      console.error("Error fetching data:", error);
       toast.error("Failed to load data");
     } finally {
       setLoading(false);

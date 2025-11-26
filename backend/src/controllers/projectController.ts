@@ -45,10 +45,13 @@ export const getProjects = async (req: AuthRequest, res: Response) => {
       { $sort: { createdAt: -1 } },
     ]);
 
-    const transformedProjects = projects.map((project) => ({
-      ...project,
-      id: project._id.toString(),
-    }));
+    const transformedProjects = projects.map((project) => {
+      const { _id, __v, ...rest } = project;
+      return {
+        ...rest,
+        id: _id.toString(),
+      };
+    });
 
     res.json(transformedProjects);
   } catch (error) {

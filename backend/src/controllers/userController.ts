@@ -14,10 +14,11 @@ export const syncUser = async (req: AuthRequest, res: Response) => {
         email: email,
         fullName: user_metadata?.full_name,
         avatarUrl: user_metadata?.avatar_url,
+        role: "admin", // Explicitly set default role
       });
       await user.save();
     } else {
-      // Update user info if changed
+      // Update user info if changed (but don't change the role)
       user.email = email;
       user.fullName = user_metadata?.full_name || user.fullName;
       user.avatarUrl = user_metadata?.avatar_url || user.avatarUrl;
@@ -52,7 +53,9 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
     }
 
     const users = await User.find().sort({ createdAt: -1 });
-    res.json(users);
+    // Transform to ensure proper id field (toJSON should handle this, but being explicit)
+    const transformedUsers = users.map((user) => user.toJSON());
+    res.json(transformedUsers);
   } catch (error) {
     res.status(500).json({ error: "Error fetching users" });
   }

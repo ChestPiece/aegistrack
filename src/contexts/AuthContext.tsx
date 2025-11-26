@@ -93,6 +93,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
+      // Sync user to MongoDB to ensure they exist with default admin role
+      try {
+        await userService.sync();
+      } catch (syncError) {
+        console.error("Error syncing user to MongoDB:", syncError);
+        // Don't throw here - we still want the user to be signed in
+      }
+
       toast.success("Successfully signed in!");
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in");
@@ -125,17 +133,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
 
+      // Clear local state regardless of whether signOut succeeded
+      // This handles cases where the session is already invalid
       setUser(null);
       setSession(null);
       setUserRole(null);
       setUserData(null);
       navigate("/auth/login");
-      toast.success("Signed out successfully");
+
+      if (error && error.message !== "Auth session missing!") {
+        console.error("Sign out error:", error);
+        toast.error("Signed out with warnings");
+      } else {
+        toast.success("Signed out successfully");
+      }
     } catch (error: any) {
-      toast.error("Failed to sign out");
-      throw error;
+      // Even if signOut fails, clear local state so user isn't stuck
+      setUser(null);
+      setSession(null);
+      setUserRole(null);
+      setUserData(null);
+      navigate("/auth/login");
+
+      console.error("Sign out error:", error);
+      toast.error("Signed out (session was invalid)");
     }
   };
 

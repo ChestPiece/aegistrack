@@ -1,6 +1,11 @@
 ﻿import { useEffect, useState } from "react";
 import { useAuth } from "@/shared/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 import { Calendar, CheckSquare, AlertCircle, ChevronDown } from "lucide-react";
 import { TaskCardSkeleton } from "@/shared/components/common/SkeletonLoaders";
 import {
@@ -10,7 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/shared/components/ui/tabs";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -18,7 +28,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/shared/components/ui/collapsible";
-import { CommentSection } from "@/shared/components/CommentSection";
+import { CommentSection } from "@/shared/components/common/CommentSection";
 import { toast } from "sonner";
 import { taskService } from "@/shared/services/api";
 
@@ -291,5 +301,3 @@ export default function MyTasks() {
     </div>
   );
 }
-
-

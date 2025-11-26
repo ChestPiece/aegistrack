@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = await userService.getCurrent();
       setUserRole(user.role || "admin");
       setUserData(user);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching user role:", error);
       setUserRole("admin");
       setUserData(null);
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = await userService.getCurrent();
       setUserRole(user.role || "admin");
       setUserData(user);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error refreshing user data:", error);
     }
   };
@@ -102,8 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       toast.success("Successfully signed in!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to sign in");
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to sign in");
       throw error;
     }
   };
@@ -124,8 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       toast.success("Account created! You can now sign in.");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create account");
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to create account");
       throw error;
     }
   };
@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         toast.success("Signed out successfully");
       }
-    } catch (error: any) {
+    } catch (error) {
       // Even if signOut fails, clear local state so user isn't stuck
       setUser(null);
       setSession(null);
@@ -187,4 +187,3 @@ export function useAuth() {
   }
   return context;
 }
-

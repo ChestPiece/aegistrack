@@ -11,6 +11,7 @@ import {
   User,
   LogOut,
   ChevronRight,
+  Archive,
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +41,7 @@ export function AppSidebar() {
     { title: "Projects", url: "/admin/projects", icon: FolderKanban },
     { title: "Tasks", url: "/admin/tasks", icon: CheckSquare },
     { title: "Team", url: "/admin/team", icon: Users },
+    { title: "Archived", url: "/admin/archived", icon: Archive },
   ];
 
   const userItems = [

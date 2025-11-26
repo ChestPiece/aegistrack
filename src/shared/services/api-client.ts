@@ -4,6 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
+  params?: Record<string, any>;
 }
 
 const apiRequest = async <T>(
@@ -25,7 +26,20 @@ const apiRequest = async <T>(
     ...options.headers,
   };
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  // Build query string from params
+  let url = `${API_URL}${endpoint}`;
+  if (options.params) {
+    const queryString = new URLSearchParams(
+      Object.entries(options.params)
+        .filter(([_, value]) => value !== undefined && value !== null)
+        .map(([key, value]) => [key, String(value)])
+    ).toString();
+    if (queryString) {
+      url += `?${queryString}`;
+    }
+  }
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });
@@ -39,8 +53,8 @@ const apiRequest = async <T>(
 };
 
 export const api = {
-  get: <T>(endpoint: string): Promise<T> =>
-    apiRequest<T>(endpoint, { method: "GET" }),
+  get: <T>(endpoint: string, options?: RequestOptions): Promise<T> =>
+    apiRequest<T>(endpoint, { method: "GET", ...options }),
   post: <T, B = unknown>(endpoint: string, body: B): Promise<T> =>
     apiRequest<T>(endpoint, { method: "POST", body: JSON.stringify(body) }),
   put: <T, B = unknown>(endpoint: string, body: B): Promise<T> =>

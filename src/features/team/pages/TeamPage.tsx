@@ -1,7 +1,12 @@
 ﻿import { useEffect, useState } from "react";
 import { userService, taskService } from "@/shared/services/api";
 import { User, Task } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 import { Badge } from "@/shared/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { Button } from "@/shared/components/ui/button";
@@ -34,8 +39,10 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/shared/contexts/AuthContext";
 
 export default function Team() {
+  const { user } = useAuth();
   const [members, setMembers] = useState<User[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -284,8 +291,20 @@ export default function Team() {
                     size="icon"
                     className="hover:bg-destructive/10"
                     onClick={() => openDeleteDialog(member)}
+                    disabled={member.supabaseId === user?.id}
+                    title={
+                      member.supabaseId === user?.id
+                        ? "You cannot delete your own account"
+                        : "Delete user"
+                    }
                   >
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    <Trash2
+                      className={`h-4 w-4 ${
+                        member.supabaseId === user?.id
+                          ? "text-muted-foreground"
+                          : "text-destructive"
+                      }`}
+                    />
                   </Button>
                 </div>
               </CardContent>
@@ -377,4 +396,3 @@ export default function Team() {
     </div>
   );
 }
-

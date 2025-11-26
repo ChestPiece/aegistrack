@@ -11,11 +11,20 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
     const user = await User.findOne({ supabaseId: userId });
     const isAdmin = user?.role === "admin";
 
-    const query = isAdmin
+    const isArchived = req.query.archived === "true";
+
+    const query: any = isAdmin
       ? {}
       : {
           $or: [{ assignedTo: userId }, { createdBy: userId }],
         };
+
+    // Add archive filter
+    if (isArchived) {
+      query.status = "archived";
+    } else {
+      query.status = { $ne: "archived" };
+    }
 
     console.log("getTasks - userId (supabaseId):", userId);
     console.log("getTasks - isAdmin:", isAdmin);

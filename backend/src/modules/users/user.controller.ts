@@ -180,6 +180,14 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Prevent admin from deleting their own account
+    if (user.supabaseId === requesterId) {
+      return res.status(403).json({
+        error:
+          "You cannot delete your own account. Please have another admin delete it if necessary.",
+      });
+    }
+
     const { error: authError } = await supabase.auth.admin.deleteUser(
       user.supabaseId
     );

@@ -1,9 +1,22 @@
 ﻿import { useEffect, useState } from "react";
 import { projectService, userService } from "@/shared/services/api";
 import { User } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, Calendar, Users, UserPlus, X } from "lucide-react";
+import {
+  Plus,
+  Calendar,
+  Users,
+  UserPlus,
+  X,
+  Pencil,
+  Archive,
+} from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import {
   Dialog,
@@ -36,6 +49,8 @@ export default function Projects() {
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -157,6 +172,47 @@ export default function Projects() {
     );
   };
 
+  const handleArchiveProject = async (projectId: string) => {
+    try {
+      await projectService.update(projectId, { status: "archived" });
+      toast.success("Project archived successfully");
+      fetchProjects();
+    } catch (error: any) {
+      toast.error("Failed to archive project");
+    }
+  };
+
+  const openEditDialog = (project: any) => {
+    setEditingProject(project);
+    setFormData({
+      title: project.title,
+      description: project.description || "",
+      deadline: project.deadline
+        ? new Date(project.deadline).toISOString().split("T")[0]
+        : "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject) return;
+
+    try {
+      await projectService.update(editingProject.id, {
+        ...formData,
+        deadline: formData.deadline || null,
+      });
+      toast.success("Project updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingProject(null);
+      setFormData({ title: "", description: "", deadline: "" });
+      fetchProjects();
+    } catch (error: any) {
+      toast.error("Failed to update project");
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -265,6 +321,61 @@ export default function Projects() {
         </Dialog>
       </div>
 
+      {/* Edit Project Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>Update project details</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateProject} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Project Title</Label>
+              <Input
+                id="edit-title"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={4}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-deadline">Deadline (optional)</Label>
+              <Input
+                id="edit-deadline"
+                type="date"
+                value={formData.deadline}
+                onChange={(e) =>
+                  setFormData({ ...formData, deadline: e.target.value })
+                }
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Save Changes</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {projects.map((project) => {
           const totalTasks = project.tasks?.length || 0;
@@ -292,6 +403,22 @@ export default function Projects() {
                       className="h-8 w-8 p-0"
                     >
                       <UserPlus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditDialog(project)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleArchiveProject(project.id)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Archive className="h-4 w-4" />
                     </Button>
                     <Badge variant={getStatusColor(project.status)}>
                       {project.status.replace("_", " ")}
@@ -465,4 +592,3 @@ export default function Projects() {
     </div>
   );
 }
-

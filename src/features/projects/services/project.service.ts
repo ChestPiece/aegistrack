@@ -2,7 +2,8 @@ import { api } from "@/shared/services/api-client";
 import { Project } from "@/shared/types";
 
 export const projectService = {
-  getAll: (): Promise<Project[]> => api.get<Project[]>("/projects"),
+  getAll: (params?: { archived?: boolean }): Promise<Project[]> =>
+    api.get<Project[]>("/projects", { params }),
   getById: (id: string): Promise<Project> =>
     api.get<Project>(`/projects/${id}`),
   create: (data: Partial<Project>): Promise<Project> =>

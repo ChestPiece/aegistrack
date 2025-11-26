@@ -11,11 +11,20 @@ export const getProjects = async (req: AuthRequest, res: Response) => {
     const user = await User.findOne({ supabaseId: userId });
     const isAdmin = user?.role === "admin";
 
-    const matchStage = isAdmin
+    const isArchived = req.query.archived === "true";
+
+    const matchStage: any = isAdmin
       ? {}
       : {
           $or: [{ createdBy: userId }, { members: userId }],
         };
+
+    // Add archive filter
+    if (isArchived) {
+      matchStage.status = "archived";
+    } else {
+      matchStage.status = { $ne: "archived" };
+    }
 
     const projects = await Project.aggregate([
       { $match: matchStage },

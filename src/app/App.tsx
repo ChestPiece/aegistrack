@@ -20,6 +20,7 @@ import UserDashboard from "../features/dashboard/pages/UserDashboard";
 import Projects from "../features/projects/pages/ProjectsPage";
 import Tasks from "../features/tasks/pages/TasksPage";
 import Team from "../features/team/pages/TeamPage";
+import ArchivedPage from "../features/admin/pages/ArchivedPage";
 
 // User pages
 import MyTasks from "../features/tasks/pages/TaskDetailPage";
@@ -88,6 +89,16 @@ const App = () => (
                   <ProtectedRoute requireAdmin>
                     <AppLayout>
                       <Team />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/archived"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AppLayout>
+                      <ArchivedPage />
                     </AppLayout>
                   </ProtectedRoute>
                 }

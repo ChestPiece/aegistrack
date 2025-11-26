@@ -2,7 +2,8 @@ import { api } from "@/shared/services/api-client";
 import { Task } from "@/shared/types";
 
 export const taskService = {
-  getAll: (): Promise<Task[]> => api.get<Task[]>("/tasks"),
+  getAll: (params?: { archived?: boolean }): Promise<Task[]> =>
+    api.get<Task[]>("/tasks", { params }),
   create: (data: Partial<Task>): Promise<Task> =>
     api.post<Task, Partial<Task>>("/tasks", data),
   update: (id: string, data: Partial<Task>): Promise<Task> =>

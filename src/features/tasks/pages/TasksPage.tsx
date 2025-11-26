@@ -11,7 +11,7 @@ import {
 } from "@/shared/components/ui/card";
 import { GlassCard } from "@/shared/components/ui/GlassCard";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, Calendar, User, Clock } from "lucide-react";
+import { Plus, Calendar, User, Clock, Pencil, Archive } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import {
   Dialog,
@@ -41,6 +41,8 @@ export default function Tasks() {
   const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -128,6 +130,63 @@ export default function Tasks() {
     try {
       await taskService.update(taskId, { status: newStatus });
       toast.success("Task status updated");
+      fetchData();
+    } catch (error: any) {
+      toast.error("Failed to update task");
+    }
+  };
+
+  const handleArchiveTask = async (taskId: string) => {
+    try {
+      await taskService.update(taskId, { status: "archived" });
+      toast.success("Task archived successfully");
+      fetchData();
+    } catch (error: any) {
+      toast.error("Failed to archive task");
+    }
+  };
+
+  const openEditDialog = (task: any) => {
+    setEditingTask(task);
+    setFormData({
+      title: task.title,
+      description: task.description || "",
+      project_id: task.projectId?.id || task.projectId || "",
+      assigned_to: task.assignedTo || "",
+      deadline: task.deadline
+        ? new Date(task.deadline).toISOString().split("T")[0]
+        : "",
+      status: task.status,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTask) return;
+
+    try {
+      await taskService.update(editingTask.id, {
+        title: formData.title,
+        description: formData.description,
+        deadline: formData.deadline || null,
+        assignedTo:
+          formData.assigned_to === "__unassigned__"
+            ? null
+            : formData.assigned_to || null,
+        projectId: formData.project_id,
+      });
+      toast.success("Task updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingTask(null);
+      setFormData({
+        title: "",
+        description: "",
+        project_id: "",
+        assigned_to: "",
+        deadline: "",
+        status: "pending",
+      });
       fetchData();
     } catch (error: any) {
       toast.error("Failed to update task");
@@ -306,6 +365,135 @@ export default function Tasks() {
         </Dialog>
       </div>
 
+      {/* Edit Task Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Edit Task</DialogTitle>
+            <DialogDescription>Update task details</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdateTask} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-title" className="text-sm font-medium">
+                Task Title
+              </Label>
+              <Input
+                id="edit-title"
+                placeholder="Enter task title"
+                className="h-10"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-project" className="text-sm font-medium">
+                  Project
+                </Label>
+                <Select
+                  value={formData.project_id}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, project_id: value })
+                  }
+                  required
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-assigned" className="text-sm font-medium">
+                  Assign to (optional)
+                </Label>
+                <Select
+                  value={formData.assigned_to}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, assigned_to: value })
+                  }
+                  disabled={!formData.project_id}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue
+                      placeholder={
+                        formData.project_id
+                          ? "Select member"
+                          : "Select project first"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__unassigned__">Unassigned</SelectItem>
+                    {projectMembers.map((user) => (
+                      <SelectItem key={user.id} value={user.supabaseId}>
+                        {user.fullName || user.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-deadline" className="text-sm font-medium">
+                Deadline (optional)
+              </Label>
+              <Input
+                id="edit-deadline"
+                type="date"
+                className="h-10"
+                value={formData.deadline}
+                onChange={(e) =>
+                  setFormData({ ...formData, deadline: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-description" className="text-sm font-medium">
+                Description
+              </Label>
+              <Textarea
+                id="edit-description"
+                placeholder="Describe the task (optional)"
+                className="min-h-[80px] resize-none"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 px-5"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="h-10 px-5">
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {tasks.map((task, index) => {
           const assignedUser = getAssignedUser(task.assignedTo);
@@ -317,7 +505,7 @@ export default function Tasks() {
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1">
                     <CardTitle className="text-lg font-semibold leading-tight">
                       {task.title}
                     </CardTitle>
@@ -327,12 +515,30 @@ export default function Tasks() {
                       </span>
                     </div>
                   </div>
-                  <Badge
-                    variant={getStatusColor(task.status)}
-                    className="capitalize shrink-0"
-                  >
-                    {task.status.replace("_", " ")}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditDialog(task)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleArchiveTask(task.id)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                    <Badge
+                      variant={getStatusColor(task.status)}
+                      className="capitalize shrink-0"
+                    >
+                      {task.status.replace("_", " ")}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">

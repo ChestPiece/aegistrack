@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface ITask extends Document {
   title: string;
   description?: string;
-  status: "pending" | "in_progress" | "completed";
+  status: "pending" | "in_progress" | "completed" | "archived";
   deadline?: Date;
   projectId: mongoose.Types.ObjectId;
   assignedTo?: string; // Supabase ID
@@ -18,7 +18,7 @@ const TaskSchema: Schema = new Schema(
     description: { type: String },
     status: {
       type: String,
-      enum: ["pending", "in_progress", "completed"],
+      enum: ["pending", "in_progress", "completed", "archived"],
       default: "pending",
     },
     deadline: { type: Date },

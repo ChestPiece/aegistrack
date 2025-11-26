@@ -56,11 +56,17 @@ export function AppSidebar() {
   const menuItems = userRole === "admin" ? adminItems : userItems;
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"}>
-      <SidebarContent>
+    <Sidebar
+      className={
+        collapsed
+          ? "w-16 border-r border-white/20"
+          : "w-64 border-r border-white/20"
+      }
+    >
+      <SidebarContent className="bg-white/60 dark:bg-black/40 backdrop-blur-md">
         <div className="px-3 py-4">
           <h2
-            className={`font-bold text-xl tracking-tight ${
+            className={`font-bold text-xl tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent ${
               collapsed ? "text-center" : ""
             }`}
           >
@@ -69,7 +75,9 @@ export function AppSidebar() {
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground/80">
+            Main Menu
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -78,8 +86,8 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground"
-                      activeClassName="bg-accent text-accent-foreground font-medium"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary hover:shadow-sm"
+                      activeClassName="bg-white/80 dark:bg-white/20 text-primary font-medium shadow-sm backdrop-blur-sm"
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -92,7 +100,9 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-muted-foreground/80">
+            Account
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {commonItems.map((item) => (
@@ -101,8 +111,8 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground"
-                      activeClassName="bg-accent text-accent-foreground font-medium"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary hover:shadow-sm"
+                      activeClassName="bg-white/80 dark:bg-white/20 text-primary font-medium shadow-sm backdrop-blur-sm"
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -115,15 +125,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <div className="p-3 border-t">
+      <SidebarFooter className="bg-white/60 dark:bg-black/40 backdrop-blur-md border-t border-white/20">
+        <div className="p-3">
           <div
             className={`flex items-center gap-3 ${
               collapsed ? "justify-center" : ""
             }`}
           >
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-primary-foreground">
+            <Avatar className="h-8 w-8 ring-2 ring-white/20">
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                 {userData?.fullName?.charAt(0).toUpperCase() ||
                   user?.email?.charAt(0).toUpperCase() ||
                   "U"}
@@ -144,7 +154,9 @@ export function AppSidebar() {
           <Button
             variant="ghost"
             size={collapsed ? "icon" : "sm"}
-            className={`mt-2 ${collapsed ? "" : "w-full"}`}
+            className={`mt-2 hover:bg-red-500/10 hover:text-red-500 ${
+              collapsed ? "" : "w-full"
+            }`}
             onClick={signOut}
           >
             <LogOut className="h-4 w-4" />

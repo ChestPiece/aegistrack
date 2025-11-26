@@ -1,8 +1,17 @@
 ﻿import { useEffect, useState } from "react";
-import { taskService, projectService, userService } from "@/shared/services/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import {
+  taskService,
+  projectService,
+  userService,
+} from "@/shared/services/api";
+import {
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
+import { GlassCard } from "@/shared/components/ui/GlassCard";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, Calendar } from "lucide-react";
+import { Plus, Calendar, User, Clock } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import {
   Dialog,
@@ -23,6 +32,7 @@ import {
   SelectValue,
 } from "@/shared/components/ui/select";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 
 export default function Tasks() {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -51,27 +61,6 @@ export default function Tasks() {
         projectService.getAll(),
         userService.getAll(),
       ]);
-
-      console.log("Fetched projects:", projects);
-      console.log("Fetched users:", users);
-      console.log("Fetched tasks:", tasks);
-
-      // Debug: Check user data structure
-      if (users && users.length > 0) {
-        console.log("First user structure:", users[0]);
-        console.log(
-          "User supabaseIds:",
-          users.map((u) => u.supabaseId)
-        );
-      }
-
-      // Debug: Check task assignment data
-      if (tasks && tasks.length > 0) {
-        console.log(
-          "Task assignedTo values:",
-          tasks.map((t) => ({ id: t.id, assignedTo: t.assignedTo }))
-        );
-      }
 
       setTasks(tasks || []);
       setProjects(projects || []);
@@ -124,6 +113,7 @@ export default function Tasks() {
         project_id: "",
         assigned_to: "",
         deadline: "",
+        status: "pending",
       });
       fetchData();
     } catch (error: any) {
@@ -147,26 +137,33 @@ export default function Tasks() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-        return "default";
+        return "default"; // Greenish usually
       case "in_progress":
-        return "secondary";
+        return "secondary"; // Yellowish/Orange usually
       default:
-        return "outline";
+        return "outline"; // Gray usually
     }
   };
 
+  const getAssignedUser = (userId: string | null) => {
+    if (!userId) return null;
+    return users.find((u) => u.supabaseId === userId);
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-10">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
+            Tasks
+          </h1>
           <p className="text-muted-foreground">
             Manage all tasks across projects
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="shadow-lg hover:shadow-xl transition-all">
               <Plus className="mr-2 h-4 w-4" />
               New Task
             </Button>
@@ -309,84 +306,115 @@ export default function Tasks() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4">
-        {tasks.map((task) => (
-          <Card key={task.id} className="glass hover:shadow-md transition-all">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 space-y-1">
-                  <CardTitle className="text-lg">{task.title}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {task.projects?.title || "No project"}
-                  </p>
-                </div>
-                <Select
-                  value={task.status}
-                  onValueChange={(value) => updateTaskStatus(task.id, value)}
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {task.description && (
-                <p className="text-sm text-muted-foreground">
-                  {task.description}
-                </p>
-              )}
-              <div className="flex items-center gap-4 text-sm">
-                {task.assignedTo ? (
-                  <span className="text-muted-foreground">
-                    Assigned to:{" "}
-                    {(() => {
-                      const assignedUser = users.find(
-                        (u) => u.supabaseId === task.assignedTo
-                      );
-                      if (!assignedUser) {
-                        console.warn(
-                          `User not found for task ${task.id}, assignedTo: ${task.assignedTo}`
-                        );
-                        console.warn(
-                          "Available user IDs:",
-                          users.map((u) => u.supabaseId)
-                        );
-                        return "Unknown User";
-                      }
-                      return (
-                        assignedUser.fullName || assignedUser.email || "No Name"
-                      );
-                    })()}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground">Unassigned</span>
-                )}
-                {task.deadline && (
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>{new Date(task.deadline).toLocaleDateString()}</span>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {tasks.map((task, index) => {
+          const assignedUser = getAssignedUser(task.assignedTo);
+          return (
+            <GlassCard
+              key={task.id}
+              className="hover:shadow-lg transition-all duration-300 group"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg font-semibold leading-tight">
+                      {task.title}
+                    </CardTitle>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
+                        {task.projects?.title || "No Project"}
+                      </span>
+                    </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  <Badge
+                    variant={getStatusColor(task.status)}
+                    className="capitalize shrink-0"
+                  >
+                    {task.status.replace("_", " ")}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                  {task.description || "No description provided."}
+                </p>
+
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8 border-2 border-background">
+                      <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
+                        {assignedUser
+                          ? (assignedUser.fullName || assignedUser.email || "U")
+                              .charAt(0)
+                              .toUpperCase()
+                          : "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium">
+                        {assignedUser
+                          ? assignedUser.fullName || assignedUser.email
+                          : "Unassigned"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        Assignee
+                      </span>
+                    </div>
+                  </div>
+
+                  {task.deadline && (
+                    <div className="flex flex-col items-end">
+                      <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>
+                          {new Date(task.deadline).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        Deadline
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <Select
+                    value={task.status}
+                    onValueChange={(value) =>
+                      updateTaskStatus(
+                        task.id,
+                        value as "pending" | "in_progress" | "completed"
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-full h-8 text-xs bg-muted/50 border-none">
+                      <SelectValue placeholder="Update Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </GlassCard>
+          );
+        })}
       </div>
 
       {tasks.length === 0 && !loading && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">
-            No tasks yet. Create your first task!
+          <div className="inline-flex items-center justify-center p-4 rounded-full bg-muted/30 mb-4">
+            <Clock className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-medium">No tasks found</h3>
+          <p className="text-muted-foreground mt-1">
+            Get started by creating your first task.
           </p>
         </div>
       )}
     </div>
   );
 }
-

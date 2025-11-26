@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { projectService } from "@/services/api";
+import { projectService, userService } from "@/services/api";
+import { User } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar, Users } from "lucide-react";
@@ -15,12 +16,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 export default function Projects() {
   const [projects, setProjects] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -29,6 +41,7 @@ export default function Projects() {
 
   useEffect(() => {
     fetchProjects();
+    fetchUsers();
   }, []);
 
   const fetchProjects = async () => {
@@ -42,17 +55,36 @@ export default function Projects() {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const data = await userService.getAll();
+      setUsers(data || []);
+    } catch (error: any) {
+      console.error("Failed to load users:", error);
+    }
+  };
+
+  const toggleMember = (userId: string) => {
+    setSelectedMembers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await projectService.create({
         ...formData,
         deadline: formData.deadline || null,
+        members: selectedMembers,
       });
 
       toast.success("Project created successfully");
       setIsDialogOpen(false);
       setFormData({ title: "", description: "", deadline: "" });
+      setSelectedMembers([]);
       fetchProjects();
     } catch (error: any) {
       toast.error("Failed to create project");
@@ -127,6 +159,44 @@ export default function Projects() {
                   }
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Team Members (optional)</Label>
+                <ScrollArea className="h-32 w-full rounded-md border p-4">
+                  <div className="space-y-2">
+                    {users.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center space-x-2"
+                      >
+                        <Checkbox
+                          id={user.id}
+                          checked={selectedMembers.includes(user.supabaseId)}
+                          onCheckedChange={() => toggleMember(user.supabaseId)}
+                        />
+                        <label
+                          htmlFor={user.id}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        >
+                          {user.fullName || user.email}
+                          {user.role === "admin" && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              (Admin)
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                    ))}
+                    {users.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No members available
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
+                <p className="text-xs text-muted-foreground">
+                  {selectedMembers.length} member(s) selected
+                </p>
+              </div>
               <div className="flex justify-end gap-3">
                 <Button
                   type="button"
@@ -174,7 +244,8 @@ export default function Projects() {
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
                     <span>
-                      {project.project_members?.[0]?.count || 0} members
+                      {project.memberCount || 0} member
+                      {project.memberCount !== 1 ? "s" : ""}
                     </span>
                   </div>
                   {project.deadline && (

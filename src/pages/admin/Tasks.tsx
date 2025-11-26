@@ -28,6 +28,7 @@ export default function Tasks() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -65,6 +66,25 @@ export default function Tasks() {
       setLoading(false);
     }
   };
+
+  // Update project members when project is selected
+  useEffect(() => {
+    if (formData.project_id) {
+      const selectedProject = projects.find(
+        (p) => p.id === formData.project_id
+      );
+      if (selectedProject && selectedProject.members) {
+        const members = users.filter((u) =>
+          selectedProject.members.includes(u.supabaseId)
+        );
+        setProjectMembers(members);
+      } else {
+        setProjectMembers([]);
+      }
+    } else {
+      setProjectMembers([]);
+    }
+  }, [formData.project_id, projects, users]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,18 +207,36 @@ export default function Tasks() {
                     onValueChange={(value) =>
                       setFormData({ ...formData, assigned_to: value })
                     }
+                    disabled={!formData.project_id}
                   >
                     <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Select user" />
+                      <SelectValue
+                        placeholder={
+                          formData.project_id
+                            ? "Select member"
+                            : "Select project first"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      {users.map((user) => (
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {projectMembers.map((user) => (
                         <SelectItem key={user.id} value={user.supabaseId}>
                           {user.fullName || user.email}
                         </SelectItem>
                       ))}
+                      {projectMembers.length === 0 && formData.project_id && (
+                        <SelectItem value="" disabled>
+                          No members in this project
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
+                  {formData.project_id && (
+                    <p className="text-xs text-muted-foreground">
+                      {projectMembers.length} member(s) in this project
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -284,11 +322,17 @@ export default function Tasks() {
                 </p>
               )}
               <div className="flex items-center gap-4 text-sm">
-                {task.profiles && (
+                {task.assignedTo ? (
                   <span className="text-muted-foreground">
                     Assigned to:{" "}
-                    {task.profiles.full_name || task.profiles.email}
+                    {users.find((u) => u.supabaseId === task.assignedTo)
+                      ?.fullName ||
+                      users.find((u) => u.supabaseId === task.assignedTo)
+                        ?.email ||
+                      "Unknown User"}
                   </span>
+                ) : (
+                  <span className="text-muted-foreground">Unassigned</span>
                 )}
                 {task.deadline && (
                   <div className="flex items-center gap-1 text-muted-foreground">

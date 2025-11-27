@@ -71,12 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
 
-      // Handle password recovery (invite links)
-      if (event === "PASSWORD_RECOVERY") {
-        navigate("/update-password");
-        return;
-      }
-
       if (session?.user) {
         setTimeout(() => {
           fetchUserRole(session.user.id);

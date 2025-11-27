@@ -13,9 +13,6 @@ import { AppLayout } from "@/shared/components/layout/AppLayout";
 const Login = lazy(() => import("../features/auth/pages/Login"));
 const Signup = lazy(() => import("../features/auth/pages/Signup"));
 const ConfirmEmail = lazy(() => import("../features/auth/pages/ConfirmEmail"));
-const UpdatePasswordPage = lazy(
-  () => import("../features/auth/pages/UpdatePasswordPage")
-);
 const ForgotPassword = lazy(
   () => import("../features/auth/pages/ForgotPassword")
 );
@@ -80,10 +77,6 @@ const App = () => (
                 <Route
                   path="/auth/reset-password"
                   element={<ResetPassword />}
-                />
-                <Route
-                  path="/update-password"
-                  element={<UpdatePasswordPage />}
                 />
 
                 {/* Admin Routes */}

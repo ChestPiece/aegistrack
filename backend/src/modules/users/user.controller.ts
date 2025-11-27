@@ -37,6 +37,13 @@ export const syncUser = async (req: AuthRequest, res: Response) => {
       user.email = email;
       user.fullName = user_metadata?.full_name || user.fullName;
       user.avatarUrl = user_metadata?.avatar_url || user.avatarUrl;
+
+      // If user was pending and is now logging in, set them to active
+      // (they must have confirmed their email to be able to login)
+      if (user.status === "pending") {
+        user.status = "active";
+      }
+
       // Explicitly NOT updating role here - preserve existing role
       await user.save();
     }

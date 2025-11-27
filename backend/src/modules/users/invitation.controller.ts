@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { supabase } from "../../config/supabase";
+import { config } from "../../config/environment";
 import User from "./user.model";
 import { AuthRequest } from "../../shared/middleware/auth.middleware";
 
@@ -24,30 +25,38 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // 1. Create user via Supabase Admin with password and require email verification
+    // 1. Invite user via Supabase Admin - this sends an invitation email
     const { data: authData, error: authError } =
-      await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: false, // Require email verification before user can login
-        user_metadata: {
+      await supabase.auth.admin.inviteUserByEmail(email, {
+        data: {
           role,
           fullName,
           addedBy: requesterId,
         },
+        redirectTo: `${config.frontendUrl}/auth/login`,
       });
 
     if (authError) {
-      console.error("Supabase create user error:", authError);
+      console.error("Supabase invite user error:", authError);
       return res.status(400).json({ message: authError.message });
     }
 
     if (!authData.user) {
-      return res.status(500).json({ message: "Failed to create auth user" });
+      return res.status(500).json({ message: "Failed to invite user" });
     }
 
-    // 2. Create or Update User in MongoDB
-    // We use findOneAndUpdate with upsert to handle cases where the user might exist in DB but not Auth (rare) or re-invites
+    // 2. Update the user's password in Supabase (they can use this to login after email confirmation)
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      authData.user.id,
+      { password }
+    );
+
+    if (updateError) {
+      console.error("Supabase update password error:", updateError);
+      // Continue anyway - user can still set password via invite link
+    }
+
+    // 3. Create or Update User in MongoDB
     const user = await User.findOneAndUpdate(
       { email },
       {
@@ -55,7 +64,7 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
         email,
         role,
         fullName,
-        addedBy: requesterId, // Track who added this user
+        addedBy: requesterId,
         status: "pending", // Set to pending until email is verified
       },
       { new: true, upsert: true }
@@ -63,7 +72,7 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
 
     res.status(200).json({
       message:
-        "Team member invited successfully. They will receive a verification email to activate their account.",
+        "Team member invited successfully. They will receive an invitation email to activate their account.",
       user,
     });
   } catch (error: any) {

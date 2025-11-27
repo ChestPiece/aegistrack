@@ -8,7 +8,7 @@ export interface ITask extends Document {
   priority: "high" | "medium" | "low";
   flagged: boolean;
   projectId: mongoose.Types.ObjectId;
-  assignedTo?: string; // Supabase ID
+  assignedTo?: string[]; // Supabase IDs
   createdBy: string; // Supabase ID
   createdAt: Date;
   updatedAt: Date;
@@ -31,7 +31,7 @@ const TaskSchema: Schema = new Schema(
     flagged: { type: Boolean, default: false },
     deadline: { type: Date },
     projectId: { type: Schema.Types.ObjectId, ref: "Project", required: true },
-    assignedTo: { type: String },
+    assignedTo: { type: [String], default: [] },
     createdBy: { type: String, required: true },
   },
   { timestamps: true }

@@ -90,14 +90,18 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Notify assigned user
-    if (assignedTo && assignedTo !== userId) {
-      await Notification.create({
-        userId: assignedTo,
-        title: "New Task Assigned",
-        message: `You have been assigned to task: ${title}`,
-        type: "info",
-      });
+    // Notify assigned users
+    if (assignedTo && Array.isArray(assignedTo)) {
+      for (const assigneeId of assignedTo) {
+        if (assigneeId !== userId) {
+          await Notification.create({
+            userId: assigneeId,
+            title: "New Task Assigned",
+            message: `You have been assigned to task: ${title}`,
+            type: "info",
+          });
+        }
+      }
     }
 
     res.status(201).json(savedTask);
@@ -166,7 +170,11 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     if (req.body.status && req.body.status !== updatedTask.status) {
       const updater = await User.findOne({ supabaseId: req.user.id });
       const notifyUsers = new Set<string>([updatedTask.createdBy]);
-      if (updatedTask.assignedTo) notifyUsers.add(updatedTask.assignedTo);
+
+      if (updatedTask.assignedTo && Array.isArray(updatedTask.assignedTo)) {
+        updatedTask.assignedTo.forEach((id) => notifyUsers.add(id));
+      }
+
       notifyUsers.delete(req.user.id); // Don't notify yourself
 
       for (const userId of notifyUsers) {
@@ -188,7 +196,11 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     ) {
       const updater = await User.findOne({ supabaseId: req.user.id });
       const notifyUsers = new Set<string>([updatedTask.createdBy]);
-      if (updatedTask.assignedTo) notifyUsers.add(updatedTask.assignedTo);
+
+      if (updatedTask.assignedTo && Array.isArray(updatedTask.assignedTo)) {
+        updatedTask.assignedTo.forEach((id) => notifyUsers.add(id));
+      }
+
       notifyUsers.delete(req.user.id);
 
       for (const userId of notifyUsers) {

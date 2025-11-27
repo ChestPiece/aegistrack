@@ -62,7 +62,10 @@ export const addTaskComment = async (req: AuthRequest, res: Response) => {
 
     // Notify task creator and assigned user
     const notifyUsers = new Set<string>([task.createdBy]);
-    if (task.assignedTo) notifyUsers.add(task.assignedTo);
+
+    if (task.assignedTo && Array.isArray(task.assignedTo)) {
+      task.assignedTo.forEach((id) => notifyUsers.add(id));
+    }
 
     // Check for mentions
     // Simple regex to find @Name or @Email

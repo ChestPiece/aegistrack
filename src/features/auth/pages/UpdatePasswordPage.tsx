@@ -73,9 +73,9 @@ export default function UpdatePasswordPage() {
 
       // Redirect based on role
       if (userData.role === "admin") {
-        navigate("/admin/dashboard");
+        window.location.href = "/admin/dashboard";
       } else {
-        navigate("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to update password");

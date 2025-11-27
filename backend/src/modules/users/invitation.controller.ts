@@ -5,7 +5,7 @@ import { AuthRequest } from "../../shared/middleware/auth.middleware";
 
 export const inviteUser = async (req: AuthRequest, res: Response) => {
   try {
-    const { email, fullName } = req.body;
+    const { email, fullName, password } = req.body;
     const requesterId = req.user.id; // Get the ID of the admin sending the invite
     const role = "member"; // Enforce member role for invited users
 
@@ -13,12 +13,32 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    // 1. Invite user via Supabase Admin
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    // Validate password strength
+    if (password.length < 8 || !/\d/.test(password)) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters and contain a number",
+      });
+    }
+
+    // 1. Create user via Supabase Admin with password and auto-confirm email
     const { data: authData, error: authError } =
-      await supabase.auth.admin.inviteUserByEmail(email);
+      await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Auto-confirm email so user can login immediately
+        user_metadata: {
+          role,
+          fullName,
+          addedBy: requesterId,
+        },
+      });
 
     if (authError) {
-      console.error("Supabase invite error:", authError);
+      console.error("Supabase create user error:", authError);
       return res.status(400).json({ message: authError.message });
     }
 
@@ -36,13 +56,14 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
         role,
         fullName,
         addedBy: requesterId, // Track who added this user
-        status: "pending",
+        status: "active", // Set to active since email is auto-confirmed
       },
       { new: true, upsert: true }
     );
 
     res.status(200).json({
-      message: "Invitation sent successfully",
+      message:
+        "Team member invited successfully. They can now login with the provided credentials.",
       user,
     });
   } catch (error: any) {
@@ -111,11 +132,9 @@ export const resendInvite = async (req: AuthRequest, res: Response) => {
 
         if (resetError) {
           console.error("Supabase reset password error:", resetError);
-          return res
-            .status(400)
-            .json({
-              message: "Failed to resend invitation: " + resetError.message,
-            });
+          return res.status(400).json({
+            message: "Failed to resend invitation: " + resetError.message,
+          });
         }
 
         console.log("[ResendInvite] Successfully sent password reset email");

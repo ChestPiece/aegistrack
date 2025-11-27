@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import { userService, projectService } from "@/shared/services/api";
-import { User, Project } from "@/shared/types";
+import { User, Project } from "@/types";
 import {
   Card,
   CardContent,
@@ -37,7 +37,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, Users, UserPlus, X, Mail } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Users,
+  UserPlus,
+  X,
+  Mail,
+  Lock,
+  Check,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
@@ -58,6 +68,12 @@ export default function Team() {
     email: "",
     fullName: "",
     role: "member" as "admin" | "member",
+    password: "",
+  });
+  const [passwordValidations, setPasswordValidations] = useState({
+    length: false,
+    number: false,
+    special: false,
   });
 
   // Project Member Management States
@@ -68,6 +84,14 @@ export default function Team() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    setPasswordValidations({
+      length: formData.password.length >= 8,
+      number: /\d/.test(formData.password),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
+    });
+  }, [formData.password]);
 
   const fetchData = async () => {
     try {
@@ -94,15 +118,24 @@ export default function Team() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!passwordValidations.length || !passwordValidations.number) {
+      toast.error(
+        "Password must be at least 8 characters and contain a number"
+      );
+      return;
+    }
+
     try {
       await userService.invite({
         email: formData.email,
-        role: formData.role,
+        role: "member",
         fullName: formData.fullName,
+        password: formData.password,
       });
-      toast.success("Invitation sent successfully");
+      toast.success("Team member invited successfully");
       setIsCreateDialogOpen(false);
-      setFormData({ email: "", fullName: "", role: "member" });
+      setFormData({ email: "", fullName: "", role: "member", password: "" });
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to send invitation");
@@ -235,7 +268,17 @@ export default function Team() {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button
+              onClick={() => {
+                setFormData({
+                  email: "",
+                  fullName: "",
+                  role: "member",
+                  password: "",
+                });
+                setIsCreateDialogOpen(true);
+              }}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Invite Member
             </Button>
@@ -274,22 +317,92 @@ export default function Team() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value: "admin" | "member") =>
-                    setFormData({ ...formData, role: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
+                    required
+                    placeholder="Create a secure password"
+                    className="pl-9"
+                  />
+                </div>
               </div>
+              {/* Password Strength Indicators */}
+              {formData.password && (
+                <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-white/5">
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                    Password Requirements:
+                  </p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs">
+                      <div
+                        className={`h-3.5 w-3.5 rounded-full flex items-center justify-center ${
+                          passwordValidations.length
+                            ? "bg-green-500/20 text-green-500"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Check className="h-2 w-2" />
+                      </div>
+                      <span
+                        className={
+                          passwordValidations.length
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        At least 8 characters
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <div
+                        className={`h-3.5 w-3.5 rounded-full flex items-center justify-center ${
+                          passwordValidations.number
+                            ? "bg-green-500/20 text-green-500"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Check className="h-2 w-2" />
+                      </div>
+                      <span
+                        className={
+                          passwordValidations.number
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        Contains a number
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <div
+                        className={`h-3.5 w-3.5 rounded-full flex items-center justify-center ${
+                          passwordValidations.special
+                            ? "bg-green-500/20 text-green-500"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Check className="h-2 w-2" />
+                      </div>
+                      <span
+                        className={
+                          passwordValidations.special
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        Contains special character (optional)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-end gap-3">
                 <Button
                   type="button"

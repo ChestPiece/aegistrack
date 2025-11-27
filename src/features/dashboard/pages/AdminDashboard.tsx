@@ -21,7 +21,7 @@ import {
   Shield,
   Activity,
 } from "lucide-react";
-import { Task, Project, User } from "@/shared/types";
+import { Task, Project, User } from "@/types";
 import { getErrorMessage } from "@/shared/utils/errors";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
@@ -275,7 +275,10 @@ export default function AdminDashboard() {
                   <div>
                     <p className="font-medium">{task.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      {task.projectId?.title || "No Project"}
+                      {typeof task.projectId === "object" &&
+                      task.projectId?.title
+                        ? task.projectId.title
+                        : "No Project"}
                     </p>
                   </div>
                 </div>

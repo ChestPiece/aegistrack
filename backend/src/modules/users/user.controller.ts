@@ -17,13 +17,17 @@ export const syncUser = async (req: AuthRequest, res: Response) => {
     }
 
     if (!user) {
-      // Create new user with default admin role (for self-signup users)
+      // Create new user
+      // Use role from metadata if available (for invited users), otherwise default to admin (for self-signup)
+      const role = user_metadata?.role || "admin";
+
       user = new User({
         supabaseId: id,
         email: email,
         fullName: user_metadata?.full_name,
         avatarUrl: user_metadata?.avatar_url,
-        role: "admin",
+        role: role,
+        addedBy: user_metadata?.addedBy,
       });
       await user.save();
     } else {

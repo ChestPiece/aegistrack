@@ -36,8 +36,9 @@ export default function Login() {
 
     try {
       await signIn(email, password);
-    } catch (error) {
-      // Error is handled in AuthContext
+      // Success toast is shown in AuthContext
+    } catch (error: any) {
+      // Error is handled in AuthContext with toast notifications
     } finally {
       setIsLoading(false);
     }

@@ -24,6 +24,7 @@ export const userService = {
     email: string;
     role: string;
     fullName: string;
+    password: string;
   }): Promise<{ message: string; user: User }> =>
     api.post<{ message: string; user: User }, typeof data>(
       "/users/invite",

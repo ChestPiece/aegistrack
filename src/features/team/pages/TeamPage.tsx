@@ -94,14 +94,6 @@ export default function Team() {
     queryFn: () => projectService.getAll(),
   });
 
-  useEffect(() => {
-    setPasswordValidations({
-      length: formData.password.length >= 8,
-      number: /\d/.test(formData.password),
-      special: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
-    });
-  }, [formData.password]);
-
   const isLoading = isLoadingMembers || isLoadingProjects;
 
   if (isLoading) {
@@ -112,13 +104,6 @@ export default function Team() {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!passwordValidations.length || !passwordValidations.number) {
-      toast.error(
-        "Password must be at least 8 characters and contain a number"
-      );
-      return;
-    }
 
     try {
       await userService.invite({
@@ -365,76 +350,6 @@ export default function Team() {
                   />
                 </div>
               </div>
-              {/* Password Strength Indicators */}
-              {formData.password && (
-                <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-white/5">
-                  <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                    Password Requirements:
-                  </p>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 text-xs">
-                      <div
-                        className={`h-3.5 w-3.5 rounded-full flex items-center justify-center ${
-                          passwordValidations.length
-                            ? "bg-green-500/20 text-green-500"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        <Check className="h-2 w-2" />
-                      </div>
-                      <span
-                        className={
-                          passwordValidations.length
-                            ? "text-foreground"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        At least 8 characters
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <div
-                        className={`h-3.5 w-3.5 rounded-full flex items-center justify-center ${
-                          passwordValidations.number
-                            ? "bg-green-500/20 text-green-500"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        <Check className="h-2 w-2" />
-                      </div>
-                      <span
-                        className={
-                          passwordValidations.number
-                            ? "text-foreground"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        Contains a number
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <div
-                        className={`h-3.5 w-3.5 rounded-full flex items-center justify-center ${
-                          passwordValidations.special
-                            ? "bg-green-500/20 text-green-500"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        <Check className="h-2 w-2" />
-                      </div>
-                      <span
-                        className={
-                          passwordValidations.special
-                            ? "text-foreground"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        Contains special character (optional)
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
               <div className="flex justify-end gap-3">
                 <Button
                   type="button"

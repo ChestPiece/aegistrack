@@ -101,7 +101,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       await supabase.auth.admin.createUser({
         email,
         password,
-        email_confirm: true,
+        email_confirm: false, // User must verify email before logging in
         user_metadata: {
           full_name: fullName,
         },

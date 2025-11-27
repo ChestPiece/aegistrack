@@ -29,3 +29,5 @@ dist-ssr
 # src/prompts/
 # src/rules/
 # docs/
+
+.env

@@ -64,6 +64,32 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 
     console.log("createTask - saved task assignedTo:", savedTask.assignedTo);
 
+    // Check project status and update if necessary
+    if (projectId) {
+      const project = await import("../projects/project.model")
+        .then((m) => m.default)
+        .then((model) => model.findById(projectId));
+
+      if (project && project.status === "completed") {
+        project.status = "active"; // Revert to active if new task is added
+        await project.save();
+
+        // Notify project members about status change
+        const updater = await User.findOne({ supabaseId: userId });
+        const notifyUsers = new Set<string>(project.members);
+        notifyUsers.delete(userId);
+
+        for (const memberId of notifyUsers) {
+          await Notification.create({
+            userId: memberId,
+            title: "Project Re-activated",
+            message: `Project "${project.title}" is active again due to a new task.`,
+            type: "info",
+          });
+        }
+      }
+    }
+
     // Notify assigned user
     if (assignedTo && assignedTo !== userId) {
       await Notification.create({
@@ -88,6 +114,52 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
     });
     if (!updatedTask) {
       return res.status(404).json({ error: "Task not found" });
+    }
+
+    // Project Status Logic
+    if (updatedTask.projectId) {
+      const Project = (await import("../projects/project.model")).default;
+      const project = await Project.findById(updatedTask.projectId);
+
+      if (project) {
+        const projectTasks = await Task.find({ projectId: project.id });
+        const allCompleted = projectTasks.every(
+          (t) => t.status === "completed"
+        );
+        const anyInProgress = projectTasks.some(
+          (t) => t.status !== "completed"
+        );
+
+        let newStatus = project.status;
+        let statusMessage = "";
+
+        if (allCompleted && project.status !== "completed") {
+          newStatus = "completed";
+          statusMessage = `Project "${project.title}" is now completed!`;
+        } else if (anyInProgress && project.status === "completed") {
+          newStatus = "active"; // Or previous status if we tracked it, but active is safe
+          statusMessage = `Project "${project.title}" is active again.`;
+        }
+
+        if (newStatus !== project.status) {
+          project.status = newStatus;
+          await project.save();
+
+          // Notify project members
+          const updater = await User.findOne({ supabaseId: req.user.id });
+          const notifyUsers = new Set<string>(project.members);
+          notifyUsers.delete(req.user.id);
+
+          for (const memberId of notifyUsers) {
+            await Notification.create({
+              userId: memberId,
+              title: "Project Status Updated",
+              message: statusMessage,
+              type: "success",
+            });
+          }
+        }
+      }
     }
 
     // Notify if status changed
@@ -133,6 +205,7 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
 
     res.json(updatedTask);
   } catch (error) {
+    console.error("Error updating task:", error);
     res.status(500).json({ error: "Error updating task" });
   }
 };

@@ -119,7 +119,7 @@ export default function ArchivedPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">
           <Archive className="inline-block h-8 w-8 mb-1 mr-2" />
           Archived Items
         </h1>

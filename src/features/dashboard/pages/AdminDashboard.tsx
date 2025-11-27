@@ -121,7 +121,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 animate-fade-in pb-10">
       <div className="flex flex-col gap-2">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">
           Admin Dashboard
         </h1>
         <p className="text-muted-foreground text-lg">

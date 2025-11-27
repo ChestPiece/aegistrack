@@ -16,10 +16,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-white/20 bg-white/60 dark:bg-black/40 backdrop-blur-md px-6 shadow-sm">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border bg-card px-6 shadow-sm">
             <SidebarTrigger />
             <div className="flex-1" />
             <NotificationBell />

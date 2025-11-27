@@ -61,14 +61,14 @@ export function AppSidebar() {
     <Sidebar
       className={
         collapsed
-          ? "w-16 border-r border-white/20"
-          : "w-64 border-r border-white/20"
+          ? "w-16 border-r border-sidebar-border"
+          : "w-64 border-r border-sidebar-border"
       }
     >
-      <SidebarContent className="bg-white/60 dark:bg-black/40 backdrop-blur-md">
+      <SidebarContent className="bg-sidebar">
         <div className="px-3 py-4">
           <h2
-            className={`font-bold text-xl tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent ${
+            className={`font-bold text-xl tracking-tight text-foreground ${
               collapsed ? "text-center" : ""
             }`}
           >
@@ -88,8 +88,8 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary hover:shadow-sm"
-                      activeClassName="bg-white/80 dark:bg-white/20 text-primary font-medium shadow-sm backdrop-blur-sm"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -113,8 +113,8 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-white/50 dark:hover:bg-white/10 hover:text-primary hover:shadow-sm"
-                      activeClassName="bg-white/80 dark:bg-white/20 text-primary font-medium shadow-sm backdrop-blur-sm"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
                       <item.icon className="h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
@@ -127,15 +127,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="bg-white/60 dark:bg-black/40 backdrop-blur-md border-t border-white/20">
+      <SidebarFooter className="bg-sidebar border-t border-sidebar-border">
         <div className="p-3">
           <div
             className={`flex items-center gap-3 ${
               collapsed ? "justify-center" : ""
             }`}
           >
-            <Avatar className="h-8 w-8 ring-2 ring-white/20">
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+            <Avatar className="h-8 w-8 ring-2 ring-border">
+              <AvatarFallback className="bg-primary text-primary-foreground">
                 {userData?.fullName?.charAt(0).toUpperCase() ||
                   user?.email?.charAt(0).toUpperCase() ||
                   "U"}

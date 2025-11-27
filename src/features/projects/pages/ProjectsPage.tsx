@@ -227,94 +227,144 @@ export default function Projects() {
               New Project
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create New Project</DialogTitle>
+              <DialogTitle className="text-xl">Create New Project</DialogTitle>
               <DialogDescription>
                 Add a new project to track tasks and collaborate with your team
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Project Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  rows={4}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="deadline">Deadline (optional)</Label>
-                <Input
-                  id="deadline"
-                  type="date"
-                  value={formData.deadline}
-                  onChange={(e) =>
-                    setFormData({ ...formData, deadline: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Team Members (optional)</Label>
-                <ScrollArea className="h-32 w-full rounded-md border p-4">
-                  <div className="space-y-2">
-                    {users.map((user) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center space-x-2"
-                      >
-                        <Checkbox
-                          id={user.id}
-                          checked={selectedMembers.includes(user.supabaseId)}
-                          onCheckedChange={() => toggleMember(user.supabaseId)}
-                        />
-                        <label
-                          htmlFor={user.id}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Project Title */}
+                <div className="space-y-1.5 md:col-span-1">
+                  <Label htmlFor="title" className="text-sm font-medium">
+                    Project Title
+                  </Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    placeholder="Enter project title"
+                    className="h-10"
+                    required
+                  />
+                </div>
+
+                {/* Deadline */}
+                <div className="space-y-1.5 md:col-span-1">
+                  <Label htmlFor="deadline" className="text-sm font-medium">
+                    Deadline (optional)
+                  </Label>
+                  <Input
+                    id="deadline"
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) =>
+                      setFormData({ ...formData, deadline: e.target.value })
+                    }
+                    className="h-10"
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label htmlFor="description" className="text-sm font-medium">
+                    Description
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="Describe your project..."
+                    rows={3}
+                    className="resize-none min-h-[80px]"
+                  />
+                </div>
+
+                {/* Team Members */}
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-sm font-medium">
+                    Team Members (optional)
+                  </Label>
+                  <ScrollArea className="h-[200px] w-full rounded-lg border bg-muted/10 p-2">
+                    <div className="space-y-1">
+                      {users.map((user) => (
+                        <div
+                          key={user.id}
+                          className={`flex items-center gap-3 p-2 rounded-md transition-all cursor-pointer hover:bg-muted ${
+                            selectedMembers.includes(user.supabaseId)
+                              ? "bg-muted/50"
+                              : ""
+                          }`}
+                          onClick={() => toggleMember(user.supabaseId)}
                         >
-                          {user.fullName || user.email}
-                          {user.role === "admin" && (
-                            <span className="ml-2 text-xs text-muted-foreground">
-                              (Admin)
-                            </span>
-                          )}
-                        </label>
-                      </div>
-                    ))}
-                    {users.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No members available
-                      </p>
-                    )}
+                          <Checkbox
+                            id={`user-${user.id}`}
+                            checked={selectedMembers.includes(user.supabaseId)}
+                            onCheckedChange={() => {}}
+                            className="pointer-events-none"
+                          />
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                              <span className="text-xs font-medium">
+                                {(user.fullName || user.email || "?")
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex flex-col overflow-hidden">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium truncate">
+                                  {user.fullName || user.email}
+                                </span>
+                                {user.role === "admin" && (
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
+                                    Admin
+                                  </span>
+                                )}
+                              </div>
+                              {user.fullName && (
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {user.email}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {users.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
+                          <Users className="h-8 w-8 mb-2 opacity-20" />
+                          <p className="text-sm">No members available</p>
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                  <div className="flex justify-end">
+                    <span className="text-xs text-muted-foreground">
+                      {selectedMembers.length} member(s) selected
+                    </span>
                   </div>
-                </ScrollArea>
-                <p className="text-xs text-muted-foreground">
-                  {selectedMembers.length} member(s) selected
-                </p>
+                </div>
               </div>
-              <div className="flex justify-end gap-3">
+
+              <div className="flex justify-end gap-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
+                  className="h-10 px-5"
                   onClick={() => setIsDialogOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Create Project</Button>
+                <Button type="submit" className="h-10 px-5">
+                  Create Project
+                </Button>
               </div>
             </form>
           </DialogContent>
@@ -323,36 +373,46 @@ export default function Projects() {
 
       {/* Edit Project Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
+            <DialogTitle className="text-xl">Edit Project</DialogTitle>
             <DialogDescription>Update project details</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateProject} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">Project Title</Label>
+          <form onSubmit={handleUpdateProject} className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-title" className="text-sm font-medium">
+                Project Title
+              </Label>
               <Input
                 id="edit-title"
                 value={formData.title}
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
                 }
+                placeholder="Enter project title"
+                className="h-10"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Description</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-description" className="text-sm font-medium">
+                Description
+              </Label>
               <Textarea
                 id="edit-description"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
+                placeholder="Describe your project..."
                 rows={4}
+                className="resize-none min-h-[80px]"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-deadline">Deadline (optional)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-deadline" className="text-sm font-medium">
+                Deadline (optional)
+              </Label>
               <Input
                 id="edit-deadline"
                 type="date"
@@ -360,17 +420,21 @@ export default function Projects() {
                 onChange={(e) =>
                   setFormData({ ...formData, deadline: e.target.value })
                 }
+                className="h-10"
               />
             </div>
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-2">
               <Button
                 type="button"
                 variant="outline"
+                className="h-10 px-5"
                 onClick={() => setIsEditDialogOpen(false)}
               >
                 Cancel
               </Button>
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" className="h-10 px-5">
+                Save Changes
+              </Button>
             </div>
           </form>
         </DialogContent>
@@ -478,7 +542,7 @@ export default function Projects() {
 
       {/* Member Management Dialog */}
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto gap-6">
           <DialogHeader>
             <DialogTitle>Manage Project Members</DialogTitle>
             <DialogDescription>{selectedProject?.title}</DialogDescription>

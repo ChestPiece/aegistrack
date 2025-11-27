@@ -213,7 +213,7 @@ export default function Tasks() {
     <div className="space-y-6 animate-fade-in pb-10">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Tasks
           </h1>
           <p className="text-muted-foreground">
@@ -549,7 +549,7 @@ export default function Tasks() {
                 <div className="flex items-center justify-between pt-2 border-t border-border/50">
                   <div className="flex items-center gap-2">
                     <Avatar className="h-8 w-8 border-2 border-background">
-                      <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-indigo-500 text-white">
+                      <AvatarFallback className="text-xs bg-primary text-primary-foreground">
                         {assignedUser
                           ? (assignedUser.fullName || assignedUser.email || "U")
                               .charAt(0)

@@ -10,6 +10,8 @@ export interface IUser extends Document {
   bio?: string;
   location?: string;
   role: "admin" | "member";
+  status: "pending" | "active";
+  addedBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +27,8 @@ const UserSchema: Schema = new Schema(
     bio: { type: String },
     location: { type: String },
     role: { type: String, enum: ["admin", "member"], default: "admin" },
+    status: { type: String, enum: ["pending", "active"], default: "active" },
+    addedBy: { type: String }, // Supabase ID of the admin who added this user
   },
   { timestamps: true }
 );

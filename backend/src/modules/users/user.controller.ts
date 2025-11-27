@@ -7,22 +7,32 @@ export const syncUser = async (req: AuthRequest, res: Response) => {
   try {
     const { id, email, user_metadata } = req.user;
 
+    // First, try to find user by supabaseId
     let user = await User.findOne({ supabaseId: id });
 
+    // If not found by supabaseId, check if user exists by email
+    // This handles cases where user was invited but supabaseId might not match
     if (!user) {
+      user = await User.findOne({ email });
+    }
+
+    if (!user) {
+      // Create new user with default admin role (for self-signup users)
       user = new User({
         supabaseId: id,
         email: email,
         fullName: user_metadata?.full_name,
         avatarUrl: user_metadata?.avatar_url,
-        role: "admin", // Explicitly set default role
+        role: "admin",
       });
       await user.save();
     } else {
-      // Update user info if changed (but don't change the role)
+      // Update existing user's info but preserve their role
+      user.supabaseId = id; // Update supabaseId in case it was found by email
       user.email = email;
       user.fullName = user_metadata?.full_name || user.fullName;
       user.avatarUrl = user_metadata?.avatar_url || user.avatarUrl;
+      // Explicitly NOT updating role here - preserve existing role
       await user.save();
     }
 
@@ -53,7 +63,9 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: "Access denied. Admin only." });
     }
 
-    const users = await User.find().sort({ createdAt: -1 });
+    const users = await User.find({
+      $or: [{ addedBy: requester.supabaseId }, { supabaseId: requesterId }],
+    }).sort({ createdAt: -1 });
     // Transform to ensure proper id field (toJSON should handle this, but being explicit)
     const transformedUsers = users.map((user) => user.toJSON());
     res.json(transformedUsers);
@@ -97,6 +109,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       email,
       fullName,
       role: role || "admin",
+      addedBy: requesterId,
     });
 
     await newUser.save();
@@ -204,5 +217,24 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("Error deleting user:", error);
     res.status(500).json({ error: "Error deleting user" });
+  }
+};
+
+export const confirmInvite = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findOne({ supabaseId: userId });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    user.status = "active";
+    await user.save();
+
+    res.json({ message: "User confirmed successfully", user });
+  } catch (error) {
+    console.error("Error confirming user:", error);
+    res.status(500).json({ error: "Error confirming user" });
   }
 };

@@ -8,7 +8,9 @@ import {
   updateUser,
   updateProfile,
   deleteUser,
+  confirmInvite,
 } from "./user.controller";
+import { inviteUser } from "./invitation.controller";
 
 const router = express.Router();
 
@@ -17,6 +19,8 @@ router.get("/me", authenticateUser, getCurrentUser);
 router.put("/profile", authenticateUser, updateProfile);
 router.get("/", authenticateUser, getAllUsers);
 router.post("/", authenticateUser, createUser);
+router.post("/invite", authenticateUser, inviteUser);
+router.post("/confirm-invite", authenticateUser, confirmInvite);
 router.put("/:id", authenticateUser, updateUser);
 router.delete("/:id", authenticateUser, deleteUser);
 

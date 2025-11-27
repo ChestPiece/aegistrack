@@ -120,7 +120,7 @@ export default function MyTasks() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
+      <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">My Tasks</h1>
         <p className="text-muted-foreground">
           Manage and track your assigned tasks
@@ -130,17 +130,24 @@ export default function MyTasks() {
       <Tabs
         value={filter}
         onValueChange={(v) => setFilter(v as "all" | "active" | "completed")}
+        className="w-full"
       >
-        <TabsList>
-          <TabsTrigger value="all">
+        <TabsList className="w-full justify-start overflow-x-auto flex-nowrap">
+          <TabsTrigger value="all" className="flex items-center gap-2">
             All Tasks
-            <Badge variant="secondary" className="ml-2">
+            <Badge
+              variant="secondary"
+              className="rounded-full px-2 py-0 text-xs"
+            >
               {tasks.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="active">
+          <TabsTrigger value="active" className="flex items-center gap-2">
             Active
-            <Badge variant="secondary" className="ml-2">
+            <Badge
+              variant="secondary"
+              className="rounded-full px-2 py-0 text-xs"
+            >
               {
                 tasks.filter(
                   (t) => t.status === "pending" || t.status === "in_progress"
@@ -148,9 +155,12 @@ export default function MyTasks() {
               }
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="completed">
+          <TabsTrigger value="completed" className="flex items-center gap-2">
             Completed
-            <Badge variant="secondary" className="ml-2">
+            <Badge
+              variant="secondary"
+              className="rounded-full px-2 py-0 text-xs"
+            >
               {tasks.filter((t) => t.status === "completed").length}
             </Badge>
           </TabsTrigger>
@@ -158,103 +168,69 @@ export default function MyTasks() {
 
         <TabsContent value={filter} className="mt-6">
           {loading ? (
-            <div className="grid gap-4">
-              <TaskCardSkeleton count={5} />
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <TaskCardSkeleton count={8} />
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filteredTasks.map((task) => (
                 <Collapsible
                   key={task.id}
                   open={expandedTasks.has(task.id)}
                   onOpenChange={() => toggleExpanded(task.id)}
+                  className="h-full"
                 >
-                  <Card
-                    className={`glass hover:shadow-md transition-all border-l-4 ${
-                      task.status === "completed"
-                        ? "border-l-green-500"
-                        : task.status === "in_progress"
-                        ? "border-l-blue-500"
-                        : "border-l-gray-400"
-                    }`}
-                  >
+                  <Card className="glass hover:shadow-lg transition-all cursor-pointer group h-full flex flex-col">
                     <CardHeader>
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-2">
-                          <CardTitle className="text-lg">
-                            {task.title}
-                          </CardTitle>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant={getStatusVariant(task.status)}>
-                              {getStatusLabel(task.status)}
-                            </Badge>
-                            {task.status !== "completed" &&
-                              isOverdue(task.deadline) && (
-                                <Badge variant="destructive" className="gap-1">
-                                  <AlertCircle className="h-3 w-3" />
-                                  Overdue
-                                </Badge>
-                              )}
-                            {typeof task.projectId !== "string" &&
-                              task.projectId?.title && (
-                                <Badge variant="outline">
-                                  {(task.projectId as Project).title}
-                                </Badge>
-                              )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Select
-                            value={task.status}
-                            onValueChange={(value) =>
-                              updateTaskStatus(
-                                task.id,
-                                value as "pending" | "in_progress" | "completed"
-                              )
-                            }
-                          >
-                            <SelectTrigger className="w-40">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="in_progress">
-                                In Progress
-                              </SelectItem>
-                              <SelectItem value="completed">
-                                Completed
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="gap-1">
-                              <ChevronDown
-                                className={`h-4 w-4 transition-transform ${
-                                  expandedTasks.has(task.id) ? "rotate-180" : ""
-                                }`}
-                              />
-                              {expandedTasks.has(task.id) ? "Hide" : "Details"}
-                            </Button>
-                          </CollapsibleTrigger>
-                        </div>
+                      <div className="flex items-start justify-between mb-2">
+                        <CardTitle className="text-lg group-hover:text-primary transition-colors line-clamp-1">
+                          {task.title}
+                        </CardTitle>
+                        <Badge variant={getStatusVariant(task.status)}>
+                          {getStatusLabel(task.status)}
+                        </Badge>
                       </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                        {task.description || "No description provided"}
+                      </p>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                      {task.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {task.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4 text-sm">
-                        {task.deadline && (
-                          <div
-                            className={`flex items-center gap-1 ${
-                              isOverdue(task.deadline) &&
-                              task.status !== "completed"
-                                ? "text-destructive"
-                                : "text-muted-foreground"
-                            }`}
+
+                    <CardContent className="space-y-4 flex-1 flex flex-col">
+                      {/* Priority and Tags */}
+                      <div className="flex flex-wrap gap-2">
+                        {task.priority && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs capitalize"
                           >
+                            {task.priority} Priority
+                          </Badge>
+                        )}
+                        {task.status !== "completed" &&
+                          isOverdue(task.deadline) && (
+                            <Badge
+                              variant="destructive"
+                              className="text-xs gap-1"
+                            >
+                              <AlertCircle className="h-3 w-3" />
+                              Overdue
+                            </Badge>
+                          )}
+                      </div>
+
+                      {/* Spacer */}
+                      <div className="flex-1" />
+
+                      {/* Footer Info */}
+                      <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t mt-auto">
+                        <div className="flex items-center gap-1 truncate max-w-[60%]">
+                          <CheckSquare className="h-4 w-4 shrink-0" />
+                          <span className="truncate">
+                            {(task.projectId as Project)?.title || "No Project"}
+                          </span>
+                        </div>
+                        {task.deadline && (
+                          <div className="flex items-center gap-1 shrink-0">
                             <Calendar className="h-4 w-4" />
                             <span>
                               {new Date(task.deadline).toLocaleDateString()}
@@ -263,24 +239,65 @@ export default function MyTasks() {
                         )}
                       </div>
 
+                      {/* Actions */}
+                      <div className="pt-2 flex items-center justify-between gap-2">
+                        <Select
+                          value={task.status}
+                          onValueChange={(value) =>
+                            updateTaskStatus(
+                              task.id,
+                              value as "pending" | "in_progress" | "completed"
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-8 text-xs w-[110px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="in_progress">
+                              In Progress
+                            </SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1 text-xs"
+                          >
+                            {expandedTasks.has(task.id) ? "Hide" : "Details"}
+                            <ChevronDown
+                              className={`h-3 w-3 transition-transform ${
+                                expandedTasks.has(task.id) ? "rotate-180" : ""
+                              }`}
+                            />
+                          </Button>
+                        </CollapsibleTrigger>
+                      </div>
+
                       <CollapsibleContent>
-                        <CommentSection taskId={task.id} />
+                        <div className="pt-4 border-t border-border/50">
+                          <CommentSection taskId={task.id} />
+                        </div>
                       </CollapsibleContent>
                     </CardContent>
                   </Card>
                 </Collapsible>
               ))}
               {filteredTasks.length === 0 && (
-                <div className="col-span-full flex flex-col items-center justify-center py-16">
-                  <CheckSquare className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
+                <div className="col-span-full flex flex-col items-center justify-center min-h-[400px] py-12">
+                  <CheckSquare className="h-24 w-24 text-muted-foreground/40 mb-6" />
+                  <h3 className="text-2xl font-semibold mb-3">
                     {filter === "completed"
                       ? "No completed tasks"
                       : filter === "active"
                       ? "No active tasks"
                       : "No tasks yet"}
                   </h3>
-                  <p className="text-muted-foreground text-center max-w-md">
+                  <p className="text-muted-foreground text-center max-w-md leading-relaxed">
                     {filter === "completed"
                       ? "You haven't completed any tasks yet. Keep working on your active tasks!"
                       : filter === "active"

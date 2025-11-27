@@ -33,7 +33,7 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
           fullName,
           addedBy: requesterId,
         },
-        redirectTo: `${config.frontendUrl}/auth/login`,
+        redirectTo: `${config.frontendUrl}/auth/callback`,
       });
 
     if (authError) {

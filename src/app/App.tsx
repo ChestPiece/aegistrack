@@ -19,6 +19,7 @@ const ForgotPassword = lazy(
 const ResetPassword = lazy(
   () => import("../features/auth/pages/ResetPassword")
 );
+const AuthCallback = lazy(() => import("../features/auth/pages/AuthCallback"));
 const AdminDashboard = lazy(
   () => import("../features/dashboard/pages/AdminDashboard")
 );
@@ -78,6 +79,7 @@ const App = () => (
                   path="/auth/reset-password"
                   element={<ResetPassword />}
                 />
+                <Route path="/auth/callback" element={<AuthCallback />} />
 
                 {/* Admin Routes */}
                 <Route

@@ -63,15 +63,51 @@ export const addTaskComment = async (req: AuthRequest, res: Response) => {
     // Notify task creator and assigned user
     const notifyUsers = new Set<string>([task.createdBy]);
     if (task.assignedTo) notifyUsers.add(task.assignedTo);
+
+    // Check for mentions
+    // Simple regex to find @Name or @Email
+    // We will fetch project members to match against
+    const project = await Task.findById(taskId).populate("projectId");
+    // Note: This assumes we can access project members.
+    // If not directly available, we might need to fetch Project model.
+    // For now, let's just match against all users since we don't have easy access to project members here without importing Project model
+    // and we want to avoid circular dependencies if possible.
+    // Actually, let's just fetch all users for now as the user base is likely small.
+    const allUsers = await User.find({});
+
+    allUsers.forEach((user) => {
+      const mentionName = `@${user.fullName}`;
+      const mentionEmail = `@${user.email}`;
+      const mentionFirstName = `@${user.fullName?.split(" ")[0]}`;
+
+      if (
+        content.includes(mentionName) ||
+        content.includes(mentionEmail) ||
+        content.includes(mentionFirstName)
+      ) {
+        notifyUsers.add(user.supabaseId);
+      }
+    });
+
     notifyUsers.delete(userId); // Don't notify yourself
 
     for (const notifyUserId of notifyUsers) {
+      const isMention = allUsers.find(
+        (u) =>
+          u.supabaseId === notifyUserId &&
+          (content.includes(`@${u.fullName}`) ||
+            content.includes(`@${u.email}`) ||
+            content.includes(`@${u.fullName?.split(" ")[0]}`))
+      );
+
       await Notification.create({
         userId: notifyUserId,
-        title: "New Comment on Task",
-        message: `${commenter?.fullName || "Someone"} commented on "${
-          task.title
-        }"`,
+        title: isMention ? "You were mentioned" : "New Comment on Task",
+        message: isMention
+          ? `${
+              commenter?.fullName || "Someone"
+            } mentioned you in a comment on "${task.title}"`
+          : `${commenter?.fullName || "Someone"} commented on "${task.title}"`,
         type: "info",
       });
     }

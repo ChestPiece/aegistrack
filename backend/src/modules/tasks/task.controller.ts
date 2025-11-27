@@ -111,6 +111,28 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Notify if flagged
+    if (
+      req.body.flagged !== undefined &&
+      req.body.flagged !== updatedTask.flagged
+    ) {
+      const updater = await User.findOne({ supabaseId: req.user.id });
+      const notifyUsers = new Set<string>([updatedTask.createdBy]);
+      if (updatedTask.assignedTo) notifyUsers.add(updatedTask.assignedTo);
+      notifyUsers.delete(req.user.id);
+
+      for (const userId of notifyUsers) {
+        await Notification.create({
+          userId,
+          title: req.body.flagged ? "Task Flagged" : "Task Unflagged",
+          message: `${updater?.fullName || "Someone"} ${
+            req.body.flagged ? "flagged" : "unflagged"
+          } task "${updatedTask.title}"`,
+          type: "warning",
+        });
+      }
+    }
+
     res.json(updatedTask);
   } catch (error) {
     res.status(500).json({ error: "Error updating task" });

@@ -5,6 +5,7 @@ export interface IProject extends Document {
   description?: string;
   status: "planning" | "active" | "on_hold" | "completed" | "archived";
   deadline?: Date;
+  priority: "high" | "medium" | "low";
   createdBy: string; // Supabase ID of the creator
   members: string[]; // Array of Supabase IDs
   createdAt: Date;
@@ -19,6 +20,11 @@ const ProjectSchema: Schema = new Schema(
       type: String,
       enum: ["planning", "active", "on_hold", "completed", "archived"],
       default: "planning",
+    },
+    priority: {
+      type: String,
+      enum: ["high", "medium", "low"],
+      default: "medium",
     },
     deadline: { type: Date },
     createdBy: { type: String, required: true },

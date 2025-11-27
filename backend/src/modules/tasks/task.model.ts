@@ -5,6 +5,8 @@ export interface ITask extends Document {
   description?: string;
   status: "pending" | "in_progress" | "completed" | "archived";
   deadline?: Date;
+  priority: "high" | "medium" | "low";
+  flagged: boolean;
   projectId: mongoose.Types.ObjectId;
   assignedTo?: string; // Supabase ID
   createdBy: string; // Supabase ID
@@ -21,6 +23,12 @@ const TaskSchema: Schema = new Schema(
       enum: ["pending", "in_progress", "completed", "archived"],
       default: "pending",
     },
+    priority: {
+      type: String,
+      enum: ["high", "medium", "low"],
+      default: "medium",
+    },
+    flagged: { type: Boolean, default: false },
     deadline: { type: Date },
     projectId: { type: Schema.Types.ObjectId, ref: "Project", required: true },
     assignedTo: { type: String },

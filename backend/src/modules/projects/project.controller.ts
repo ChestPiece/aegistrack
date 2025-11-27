@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../../shared/middleware/auth.middleware";
 import Project from "./project.model";
 import User from "../users/user.model";
+import Notification from "../notifications/notification.model";
 
 export const getProjects = async (req: AuthRequest, res: Response) => {
   try {
@@ -154,6 +155,19 @@ export const addProjectMembers = async (req: AuthRequest, res: Response) => {
     project.members.push(...uniqueNewMembers);
     const savedProject = await project.save();
 
+    // Notify new members
+    const adder = await User.findOne({ supabaseId: req.user.id });
+    for (const userId of uniqueNewMembers) {
+      await Notification.create({
+        userId,
+        title: "Added to Project",
+        message: `${adder?.fullName || "An admin"} added you to project "${
+          project.title
+        }"`,
+        type: "success",
+      });
+    }
+
     res.json(savedProject);
   } catch (error) {
     res.status(500).json({ error: "Error adding members to project" });
@@ -177,6 +191,17 @@ export const removeProjectMember = async (req: AuthRequest, res: Response) => {
     // Remove the member
     project.members = project.members.filter((id) => id !== memberId);
     const savedProject = await project.save();
+
+    // Notify removed member
+    const remover = await User.findOne({ supabaseId: req.user.id });
+    await Notification.create({
+      userId: memberId,
+      title: "Removed from Project",
+      message: `${remover?.fullName || "An admin"} removed you from project "${
+        project.title
+      }"`,
+      type: "warning",
+    });
 
     res.json(savedProject);
   } catch (error) {

@@ -40,4 +40,9 @@ export const userService = {
   ): Promise<User> => api.put<User, typeof data>(`/users/${id}`, data),
   delete: (id: string): Promise<{ message: string }> =>
     api.delete<{ message: string }>(`/users/${id}`),
+  resendInvitation: (id: string): Promise<{ message: string; user: User }> =>
+    api.post<{ message: string; user: User }, Record<string, never>>(
+      `/users/${id}/resend-invitation`,
+      {}
+    ),
 };

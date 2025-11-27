@@ -46,4 +46,14 @@ export const userService = {
       `/users/${id}/resend-invitation`,
       {}
     ),
+  disable: (id: string): Promise<{ message: string; user: User }> =>
+    api.patch<{ message: string; user: User }, Record<string, never>>(
+      `/users/${id}/disable`,
+      {}
+    ),
+  enable: (id: string): Promise<{ message: string; user: User }> =>
+    api.patch<{ message: string; user: User }, Record<string, never>>(
+      `/users/${id}/enable`,
+      {}
+    ),
 };

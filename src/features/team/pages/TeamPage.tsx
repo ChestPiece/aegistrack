@@ -47,6 +47,8 @@ import {
   Mail,
   Lock,
   Check,
+  Ban,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/shared/contexts/AuthContext";
@@ -58,6 +60,7 @@ export default function Team() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [resendingInvite, setResendingInvite] = useState<string | null>(null);
+  const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
 
   // Global User Management States
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -198,6 +201,27 @@ export default function Team() {
       toast.error(error.message || "Failed to resend invitation");
     } finally {
       setResendingInvite(null);
+    }
+  };
+
+  const handleToggleUserStatus = async (
+    userId: string,
+    currentStatus: boolean
+  ) => {
+    setTogglingStatus(userId);
+    try {
+      if (currentStatus) {
+        await userService.disable(userId);
+        toast.success("User account disabled");
+      } else {
+        await userService.enable(userId);
+        toast.success("User account enabled");
+      }
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update user status");
+    } finally {
+      setTogglingStatus(null);
     }
   };
 
@@ -527,17 +551,25 @@ export default function Team() {
                   </div>
                 </div>
 
-                {/* Status Badge */}
-                {member.status === "pending" && (
-                  <div className="mb-3">
+                {/* Status Badges */}
+                <div className="mb-3 flex gap-2">
+                  {member.status === "pending" && (
                     <Badge
                       variant="outline"
                       className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
                     >
                       Pending Activation
                     </Badge>
-                  </div>
-                )}
+                  )}
+                  {member.isActive === false && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs bg-red-500/10 text-red-600 border-red-500/20"
+                    >
+                      Disabled
+                    </Badge>
+                  )}
+                </div>
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-1 justify-end">
@@ -562,6 +594,48 @@ export default function Team() {
                       )}
                     </Button>
                   )}
+                  {member.status === "active" &&
+                    member.supabaseId !== currentUser?.id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-8 text-xs ${
+                          member.isActive === false
+                            ? "text-green-600 hover:text-green-600"
+                            : "text-orange-600 hover:text-orange-600"
+                        }`}
+                        onClick={() =>
+                          handleToggleUserStatus(
+                            member.id,
+                            member.isActive !== false
+                          )
+                        }
+                        disabled={togglingStatus === member.id}
+                      >
+                        {togglingStatus === member.id ? (
+                          <>
+                            <div className="mr-1 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            {member.isActive === false
+                              ? "Enabling..."
+                              : "Disabling..."}
+                          </>
+                        ) : (
+                          <>
+                            {member.isActive === false ? (
+                              <>
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Enable
+                              </>
+                            ) : (
+                              <>
+                                <Ban className="h-3 w-3 mr-1" />
+                                Disable
+                              </>
+                            )}
+                          </>
+                        )}
+                      </Button>
+                    )}
                   <Button
                     variant="ghost"
                     size="icon"

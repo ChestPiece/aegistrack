@@ -9,6 +9,9 @@ export interface User {
   bio?: string;
   location?: string;
   role?: "admin" | "member";
+  status?: "pending" | "active";
+  isActive?: boolean;
+  addedBy?: string;
   createdAt: string;
   updatedAt: string;
 }

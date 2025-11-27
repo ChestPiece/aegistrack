@@ -9,6 +9,8 @@ import {
   updateProfile,
   deleteUser,
   confirmInvite,
+  disableUser,
+  enableUser,
 } from "./user.controller";
 import { inviteUser, resendInvite } from "./invitation.controller";
 
@@ -22,6 +24,8 @@ router.post("/", authenticateUser, createUser);
 router.post("/invite", authenticateUser, inviteUser);
 router.post("/confirm-invite", authenticateUser, confirmInvite);
 router.post("/:id/resend-invitation", authenticateUser, resendInvite);
+router.patch("/:id/disable", authenticateUser, disableUser);
+router.patch("/:id/enable", authenticateUser, enableUser);
 router.put("/:id", authenticateUser, updateUser);
 router.delete("/:id", authenticateUser, deleteUser);
 

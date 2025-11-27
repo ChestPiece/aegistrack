@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthRequest } from "../../shared/middleware/auth.middleware";
 import User from "./user.model";
 import { supabase } from "../../config/supabase";
+import Notification from "../notifications/notification.model";
 
 export const syncUser = async (req: AuthRequest, res: Response) => {
   try {
@@ -67,9 +68,12 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: "Access denied. Admin only." });
     }
 
+    // Only show members (not admins) that this admin invited
     const users = await User.find({
-      $or: [{ addedBy: requester.supabaseId }, { supabaseId: requesterId }],
+      addedBy: requester.supabaseId,
+      role: "member",
     }).sort({ createdAt: -1 });
+
     // Transform to ensure proper id field (toJSON should handle this, but being explicit)
     const transformedUsers = users.map((user) => user.toJSON());
     res.json(transformedUsers);
@@ -117,6 +121,15 @@ export const createUser = async (req: AuthRequest, res: Response) => {
     });
 
     await newUser.save();
+
+    // Notify admin
+    await Notification.create({
+      userId: requesterId,
+      title: "Member Invited",
+      message: `You invited ${fullName || email} to the team`,
+      type: "success",
+    });
+
     res.status(201).json(newUser);
   } catch (error) {
     console.error("Error creating user:", error);
@@ -145,6 +158,16 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
     if (!updatedUser) {
       return res.status(404).json({ error: "User not found" });
     }
+
+    // Notify admin
+    await Notification.create({
+      userId: requesterId,
+      title: "User Updated",
+      message: `You updated ${
+        updatedUser.fullName || updatedUser.email
+      }'s profile`,
+      type: "info",
+    });
 
     res.json(updatedUser);
   } catch (error) {
@@ -217,6 +240,14 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     // Delete from MongoDB
     await User.findByIdAndDelete(id);
 
+    // Notify admin
+    await Notification.create({
+      userId: requesterId,
+      title: "Member Removed",
+      message: `You removed ${user.fullName || user.email} from the team`,
+      type: "warning",
+    });
+
     res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error("Error deleting user:", error);
@@ -240,5 +271,89 @@ export const confirmInvite = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error("Error confirming user:", error);
     res.status(500).json({ error: "Error confirming user" });
+  }
+};
+
+export const disableUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const requesterId = req.user.id;
+    const requester = await User.findOne({ supabaseId: requesterId });
+
+    if (requester?.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admin only." });
+    }
+
+    const { id } = req.params;
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Prevent admin from disabling their own account
+    if (user.supabaseId === requesterId) {
+      return res.status(403).json({
+        error: "You cannot disable your own account.",
+      });
+    }
+
+    user.isActive = false;
+    await user.save();
+
+    // Notify admin
+    await Notification.create({
+      userId: requesterId,
+      title: "Account Disabled",
+      message: `You disabled ${user.fullName || user.email}'s account`,
+      type: "warning",
+    });
+
+    res.json({ message: "User disabled successfully", user });
+  } catch (error) {
+    console.error("Error disabling user:", error);
+    res.status(500).json({ error: "Error disabling user" });
+  }
+};
+
+export const enableUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const requesterId = req.user.id;
+    const requester = await User.findOne({ supabaseId: requesterId });
+
+    if (requester?.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admin only." });
+    }
+
+    const { id } = req.params;
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    user.isActive = true;
+    await user.save();
+
+    // Notify admin
+    await Notification.create({
+      userId: requesterId,
+      title: "Account Enabled",
+      message: `You enabled ${user.fullName || user.email}'s account`,
+      type: "success",
+    });
+
+    // Notify the user
+    await Notification.create({
+      userId: user.supabaseId,
+      title: "Account Activated",
+      message:
+        "Your account has been reactivated. You can now access the system.",
+      type: "success",
+    });
+
+    res.json({ message: "User enabled successfully", user });
+  } catch (error) {
+    console.error("Error enabling user:", error);
+    res.status(500).json({ error: "Error enabling user" });
   }
 };

@@ -24,12 +24,12 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // 1. Create user via Supabase Admin with password and auto-confirm email
+    // 1. Create user via Supabase Admin with password and require email verification
     const { data: authData, error: authError } =
       await supabase.auth.admin.createUser({
         email,
         password,
-        email_confirm: true, // Auto-confirm email so user can login immediately
+        email_confirm: false, // Require email verification before user can login
         user_metadata: {
           role,
           fullName,
@@ -56,14 +56,14 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
         role,
         fullName,
         addedBy: requesterId, // Track who added this user
-        status: "active", // Set to active since email is auto-confirmed
+        status: "pending", // Set to pending until email is verified
       },
       { new: true, upsert: true }
     );
 
     res.status(200).json({
       message:
-        "Team member invited successfully. They can now login with the provided credentials.",
+        "Team member invited successfully. They will receive a verification email to activate their account.",
       user,
     });
   } catch (error: any) {

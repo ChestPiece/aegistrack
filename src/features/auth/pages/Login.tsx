@@ -73,7 +73,7 @@ export default function Login() {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -101,19 +101,26 @@ export default function Login() {
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign in
             </Button>
-            <p className="text-sm text-muted-foreground text-center">
-              Don't have an account?{" "}
+            <div className="text-center space-y-2">
               <Link
-                to="/auth/signup"
-                className="text-primary hover:underline font-medium"
+                to="/auth/forgot-password"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors block"
               >
-                Sign up
+                Forgot password?
               </Link>
-            </p>
+              <p className="text-sm text-muted-foreground">
+                Don't have an account?{" "}
+                <Link
+                  to="/auth/signup"
+                  className="text-primary hover:underline font-medium"
+                >
+                  Sign up
+                </Link>
+              </p>
+            </div>
           </CardFooter>
         </form>
       </Card>
     </div>
   );
 }
-

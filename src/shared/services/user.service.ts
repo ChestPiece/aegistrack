@@ -20,6 +20,20 @@ export const userService = {
     fullName?: string;
     role?: "admin" | "member";
   }): Promise<User> => api.post<User, typeof data>("/users", data),
+  invite: (data: {
+    email: string;
+    role: string;
+    fullName: string;
+  }): Promise<{ message: string; user: User }> =>
+    api.post<{ message: string; user: User }, typeof data>(
+      "/users/invite",
+      data
+    ),
+  confirmInvite: (): Promise<{ message: string; user: User }> =>
+    api.post<{ message: string; user: User }, Record<string, never>>(
+      "/users/confirm-invite",
+      {}
+    ),
   update: (
     id: string,
     data: { fullName?: string; role?: "admin" | "member" }

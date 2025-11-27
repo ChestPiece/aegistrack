@@ -1,7 +1,12 @@
 ﻿import { useState, useEffect } from "react";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import { userService } from "@/shared/services/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -151,17 +156,6 @@ export default function Profile() {
                   placeholder="City, Country"
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="avatarUrl">Avatar URL</Label>
-                <Input
-                  id="avatarUrl"
-                  name="avatarUrl"
-                  value={formData.avatarUrl}
-                  onChange={handleChange}
-                  placeholder="Image URL"
-                />
-              </div>
             </div>
 
             <div className="space-y-2">
@@ -186,4 +180,3 @@ export default function Profile() {
     </div>
   );
 }
-

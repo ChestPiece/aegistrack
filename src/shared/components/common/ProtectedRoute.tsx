@@ -6,8 +6,12 @@ interface ProtectedRouteProps {
   requireAdmin?: boolean;
 }
 
-export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { user, userRole, loading } = useAuth();
+export function ProtectedRoute({
+  children,
+  requireAdmin = false,
+}: ProtectedRouteProps) {
+  const { user, userRole, loading, userData } = useAuth();
+  const location = window.location;
 
   if (loading) {
     return (
@@ -23,10 +27,17 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
     return <Navigate to="/auth/login" replace />;
   }
 
+  // Redirect pending users to password setup page
+  if (
+    userData?.status === "pending" &&
+    location.pathname !== "/update-password"
+  ) {
+    return <Navigate to="/update-password" replace />;
+  }
+
   if (requireAdmin && userRole !== "admin") {
     return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
 }
-

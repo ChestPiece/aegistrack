@@ -4,6 +4,7 @@ import {
   projectService,
   userService,
 } from "@/shared/services/api";
+import { useAuth } from "@/shared/contexts/AuthContext";
 import {
   CardContent,
   CardHeader,
@@ -11,7 +12,15 @@ import {
 } from "@/shared/components/ui/card";
 import { GlassCard } from "@/shared/components/ui/GlassCard";
 import { Button } from "@/shared/components/ui/button";
-import { Plus, Calendar, User, Clock, Pencil, Archive } from "lucide-react";
+import {
+  Plus,
+  Calendar,
+  User,
+  Clock,
+  Pencil,
+  Archive,
+  Flag,
+} from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import {
   Dialog,
@@ -35,6 +44,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 
 export default function Tasks() {
+  const { user: currentUser } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -50,6 +60,7 @@ export default function Tasks() {
     assigned_to: "",
     deadline: "",
     status: "pending" as "pending" | "in_progress" | "completed",
+    priority: "medium",
   });
 
   useEffect(() => {
@@ -116,6 +127,7 @@ export default function Tasks() {
         assigned_to: "",
         deadline: "",
         status: "pending",
+        priority: "medium",
       });
       fetchData();
     } catch (error: any) {
@@ -146,6 +158,16 @@ export default function Tasks() {
     }
   };
 
+  const handleFlagTask = async (task: any) => {
+    try {
+      await taskService.update(task.id, { flagged: !task.flagged });
+      toast.success(task.flagged ? "Task unflagged" : "Task flagged");
+      fetchData();
+    } catch (error: any) {
+      toast.error("Failed to update flag status");
+    }
+  };
+
   const openEditDialog = (task: any) => {
     setEditingTask(task);
     setFormData({
@@ -157,6 +179,7 @@ export default function Tasks() {
         ? new Date(task.deadline).toISOString().split("T")[0]
         : "",
       status: task.status,
+      priority: task.priority || "medium",
     });
     setIsEditDialogOpen(true);
   };
@@ -175,6 +198,7 @@ export default function Tasks() {
             ? null
             : formData.assigned_to || null,
         projectId: formData.project_id,
+        priority: formData.priority,
       });
       toast.success("Task updated successfully");
       setIsEditDialogOpen(false);
@@ -186,6 +210,7 @@ export default function Tasks() {
         assigned_to: "",
         deadline: "",
         status: "pending",
+        priority: "medium",
       });
       fetchData();
     } catch (error: any) {
@@ -201,6 +226,19 @@ export default function Tasks() {
         return "secondary"; // Yellowish/Orange usually
       default:
         return "outline"; // Gray usually
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "destructive";
+      case "medium":
+        return "default";
+      case "low":
+        return "secondary";
+      default:
+        return "secondary";
     }
   };
 
@@ -275,6 +313,29 @@ export default function Tasks() {
                 </div>
 
                 <div className="space-y-1.5">
+                  <Label htmlFor="priority" className="text-sm font-medium">
+                    Priority
+                  </Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, priority: value })
+                    }
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
                   <Label htmlFor="assigned" className="text-sm font-medium">
                     Assign to (optional)
                   </Label>
@@ -314,21 +375,21 @@ export default function Tasks() {
                     </p>
                   )}
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="deadline" className="text-sm font-medium">
-                  Deadline (optional)
-                </Label>
-                <Input
-                  id="deadline"
-                  type="date"
-                  className="h-10"
-                  value={formData.deadline}
-                  onChange={(e) =>
-                    setFormData({ ...formData, deadline: e.target.value })
-                  }
-                />
+                <div className="space-y-1.5">
+                  <Label htmlFor="deadline" className="text-sm font-medium">
+                    Deadline (optional)
+                  </Label>
+                  <Input
+                    id="deadline"
+                    type="date"
+                    className="h-10"
+                    value={formData.deadline}
+                    onChange={(e) =>
+                      setFormData({ ...formData, deadline: e.target.value })
+                    }
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -415,6 +476,29 @@ export default function Tasks() {
               </div>
 
               <div className="space-y-1.5">
+                <Label htmlFor="edit-priority" className="text-sm font-medium">
+                  Priority
+                </Label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, priority: value })
+                  }
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
                 <Label htmlFor="edit-assigned" className="text-sm font-medium">
                   Assign to (optional)
                 </Label>
@@ -444,21 +528,21 @@ export default function Tasks() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-deadline" className="text-sm font-medium">
-                Deadline (optional)
-              </Label>
-              <Input
-                id="edit-deadline"
-                type="date"
-                className="h-10"
-                value={formData.deadline}
-                onChange={(e) =>
-                  setFormData({ ...formData, deadline: e.target.value })
-                }
-              />
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-deadline" className="text-sm font-medium">
+                  Deadline (optional)
+                </Label>
+                <Input
+                  id="edit-deadline"
+                  type="date"
+                  className="h-10"
+                  value={formData.deadline}
+                  onChange={(e) =>
+                    setFormData({ ...formData, deadline: e.target.value })
+                  }
+                />
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -497,30 +581,66 @@ export default function Tasks() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {tasks.map((task, index) => {
           const assignedUser = getAssignedUser(task.assignedTo);
+          const canEdit = task.assignedTo === currentUser?.id;
+
           return (
             <GlassCard
               key={task.id}
-              className="hover:shadow-lg transition-all duration-300 group"
+              className={`hover:shadow-lg transition-all duration-300 group ${
+                task.flagged ? "ring-2 ring-red-500/50" : ""
+              }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1 flex-1">
-                    <CardTitle className="text-lg font-semibold leading-tight">
-                      {task.title}
-                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg font-semibold leading-tight">
+                        {task.title}
+                      </CardTitle>
+                      {task.flagged && (
+                        <Flag className="h-4 w-4 text-red-500 fill-red-500" />
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="font-medium text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
                         {task.projects?.title || "No Project"}
                       </span>
+                      <Badge
+                        variant={
+                          getPriorityColor(task.priority || "medium") as any
+                        }
+                        className="text-[10px] px-1.5 py-0 h-4"
+                      >
+                        {(task.priority || "medium").toUpperCase()}
+                      </Badge>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleFlagTask(task)}
+                      className={`h-8 w-8 p-0 ${
+                        task.flagged
+                          ? "text-red-500"
+                          : "text-muted-foreground hover:text-red-500"
+                      }`}
+                      title={task.flagged ? "Unflag task" : "Flag task"}
+                    >
+                      <Flag
+                        className={`h-4 w-4 ${
+                          task.flagged ? "fill-current" : ""
+                        }`}
+                      />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => openEditDialog(task)}
                       className="h-8 w-8 p-0"
+                      disabled={!canEdit}
+                      title={!canEdit ? "Only assignee can edit" : "Edit task"}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -593,6 +713,7 @@ export default function Tasks() {
                         value as "pending" | "in_progress" | "completed"
                       )
                     }
+                    disabled={!canEdit}
                   >
                     <SelectTrigger className="w-full h-8 text-xs bg-muted/50 border-none">
                       <SelectValue placeholder="Update Status" />

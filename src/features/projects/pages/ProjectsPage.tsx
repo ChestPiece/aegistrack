@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { projectService, userService } from "@/shared/services/api";
-import { User } from "@/types";
+import { User } from "@/shared/types";
+import { useAuth } from "@/shared/contexts/AuthContext";
 import {
   Card,
   CardContent,
@@ -16,6 +17,7 @@ import {
   X,
   Pencil,
   Archive,
+  Flag,
 } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import {
@@ -36,11 +38,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
-import { Checkbox } from "@/shared/components/ui/checkbox";
+import { MultiSelect } from "@/shared/components/ui/multi-select";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { toast } from "sonner";
 
 export default function Projects() {
+  const { user: currentUser } = useAuth();
   const [projects, setProjects] = useState<any[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +58,7 @@ export default function Projects() {
     title: "",
     description: "",
     deadline: "",
+    priority: "medium",
   });
 
   useEffect(() => {
@@ -65,7 +69,16 @@ export default function Projects() {
   const fetchProjects = async () => {
     try {
       const data = await projectService.getAll();
-      setProjects(data || []);
+      // Sort by priority (High > Medium > Low)
+      const priorityOrder = { high: 1, medium: 2, low: 3 };
+      const sortedData = (data || []).sort((a: any, b: any) => {
+        const priorityA =
+          priorityOrder[a.priority as keyof typeof priorityOrder] || 2;
+        const priorityB =
+          priorityOrder[b.priority as keyof typeof priorityOrder] || 2;
+        return priorityA - priorityB;
+      });
+      setProjects(sortedData);
     } catch (error: any) {
       toast.error("Failed to load projects");
     } finally {
@@ -82,14 +95,6 @@ export default function Projects() {
     }
   };
 
-  const toggleMember = (userId: string) => {
-    setSelectedMembers((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -101,7 +106,12 @@ export default function Projects() {
 
       toast.success("Project created successfully");
       setIsDialogOpen(false);
-      setFormData({ title: "", description: "", deadline: "" });
+      setFormData({
+        title: "",
+        description: "",
+        deadline: "",
+        priority: "medium",
+      });
       setSelectedMembers([]);
       fetchProjects();
     } catch (error: any) {
@@ -119,6 +129,19 @@ export default function Projects() {
         return "outline";
       default:
         return "outline";
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "destructive";
+      case "medium":
+        return "default"; // Changed from "warning" as it might not exist
+      case "low":
+        return "secondary";
+      default:
+        return "secondary";
     }
   };
 
@@ -190,6 +213,7 @@ export default function Projects() {
       deadline: project.deadline
         ? new Date(project.deadline).toISOString().split("T")[0]
         : "",
+      priority: project.priority || "medium",
     });
     setIsEditDialogOpen(true);
   };
@@ -206,12 +230,22 @@ export default function Projects() {
       toast.success("Project updated successfully");
       setIsEditDialogOpen(false);
       setEditingProject(null);
-      setFormData({ title: "", description: "", deadline: "" });
+      setFormData({
+        title: "",
+        description: "",
+        deadline: "",
+        priority: "medium",
+      });
       fetchProjects();
     } catch (error: any) {
       toast.error("Failed to update project");
     }
   };
+
+  // Filter users for MultiSelect to exclude current user
+  const availableUsersForSelect = users.filter(
+    (u) => u.supabaseId !== currentUser?.id
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -253,6 +287,28 @@ export default function Projects() {
                   />
                 </div>
 
+                {/* Priority */}
+                <div className="space-y-1.5 md:col-span-1">
+                  <Label htmlFor="priority" className="text-sm font-medium">
+                    Priority
+                  </Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, priority: value })
+                    }
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Deadline */}
                 <div className="space-y-1.5 md:col-span-1">
                   <Label htmlFor="deadline" className="text-sm font-medium">
@@ -291,60 +347,21 @@ export default function Projects() {
                   <Label className="text-sm font-medium">
                     Team Members (optional)
                   </Label>
-                  <ScrollArea className="h-[200px] w-full rounded-lg border bg-muted/10 p-2">
-                    <div className="space-y-1">
-                      {users.map((user) => (
-                        <div
-                          key={user.id}
-                          className={`flex items-center gap-3 p-2 rounded-md transition-all cursor-pointer hover:bg-muted ${
-                            selectedMembers.includes(user.supabaseId)
-                              ? "bg-muted/50"
-                              : ""
-                          }`}
-                          onClick={() => toggleMember(user.supabaseId)}
-                        >
-                          <Checkbox
-                            id={`user-${user.id}`}
-                            checked={selectedMembers.includes(user.supabaseId)}
-                            onCheckedChange={() => {}}
-                            className="pointer-events-none"
-                          />
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                              <span className="text-xs font-medium">
-                                {(user.fullName || user.email || "?")
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="flex flex-col overflow-hidden">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium truncate">
-                                  {user.fullName || user.email}
-                                </span>
-                                {user.role === "admin" && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
-                                    Admin
-                                  </span>
-                                )}
-                              </div>
-                              {user.fullName && (
-                                <span className="text-xs text-muted-foreground truncate">
-                                  {user.email}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {users.length === 0 && (
-                        <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
-                          <Users className="h-8 w-8 mb-2 opacity-20" />
-                          <p className="text-sm">No members available</p>
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
+                  <MultiSelect
+                    options={availableUsersForSelect.map((user) => ({
+                      value: user.supabaseId,
+                      label: user.fullName || user.email,
+                      subtitle: user.fullName ? user.email : undefined,
+                      badge: user.role === "admin" ? "Admin" : undefined,
+                      avatar: (user.fullName || user.email || "?")
+                        .charAt(0)
+                        .toUpperCase(),
+                    }))}
+                    selected={selectedMembers}
+                    onChange={setSelectedMembers}
+                    placeholder="Select team members..."
+                    emptyText="No members available"
+                  />
                   <div className="flex justify-end">
                     <span className="text-xs text-muted-foreground">
                       {selectedMembers.length} member(s) selected
@@ -394,6 +411,28 @@ export default function Projects() {
                 required
               />
             </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-priority" className="text-sm font-medium">
+                Priority
+              </Label>
+              <Select
+                value={formData.priority}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, priority: value })
+                }
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-1.5">
               <Label htmlFor="edit-description" className="text-sm font-medium">
                 Description
@@ -489,9 +528,19 @@ export default function Projects() {
                     </Badge>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {project.description || "No description"}
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge
+                    variant={
+                      getPriorityColor(project.priority || "medium") as any
+                    }
+                    className="text-xs px-2 py-0.5 h-5"
+                  >
+                    {(project.priority || "medium").toUpperCase()}
+                  </Badge>
+                  <p className="text-sm text-muted-foreground line-clamp-1">
+                    {project.description || "No description"}
+                  </p>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">

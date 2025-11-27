@@ -11,6 +11,10 @@ import { AppLayout } from "@/shared/components/layout/AppLayout";
 // Auth pages
 import Login from "../features/auth/pages/Login";
 import Signup from "../features/auth/pages/Signup";
+import ConfirmEmail from "../features/auth/pages/ConfirmEmail";
+import UpdatePasswordPage from "../features/auth/pages/UpdatePasswordPage";
+import ForgotPassword from "../features/auth/pages/ForgotPassword";
+import ResetPassword from "../features/auth/pages/ResetPassword";
 
 // Dashboard pages
 import AdminDashboard from "../features/dashboard/pages/AdminDashboard";
@@ -51,6 +55,13 @@ const App = () => (
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/auth/login" element={<Login />} />
               <Route path="/auth/signup" element={<Signup />} />
+              <Route path="/auth/confirm-email" element={<ConfirmEmail />} />
+              <Route
+                path="/auth/forgot-password"
+                element={<ForgotPassword />}
+              />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
+              <Route path="/update-password" element={<UpdatePasswordPage />} />
 
               {/* Admin Routes */}
               <Route

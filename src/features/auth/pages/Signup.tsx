@@ -29,7 +29,7 @@ export default function Signup() {
 
     try {
       await signUp(email, password, fullName);
-      navigate("/auth/login");
+      navigate("/auth/confirm-email");
     } catch (error) {
       // Error is handled in AuthContext
     } finally {
@@ -80,7 +80,7 @@ export default function Signup() {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                  placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -124,4 +124,3 @@ export default function Signup() {
     </div>
   );
 }
-

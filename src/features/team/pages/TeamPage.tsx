@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react";
-import { userService, taskService } from "@/shared/services/api";
-import { User, Task } from "@/types";
+import { userService, projectService } from "@/shared/services/api";
+import { User, Project } from "@/shared/types";
 import {
   Card,
   CardContent,
@@ -37,56 +37,75 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, UserPlus, X, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/shared/contexts/AuthContext";
+import { ScrollArea } from "@/shared/components/ui/scroll-area";
 
 export default function Team() {
-  const { user } = useAuth();
+  const { user: currentUser } = useAuth();
   const [members, setMembers] = useState<User[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resendingInvite, setResendingInvite] = useState<string | null>(null);
+
+  // Global User Management States
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     email: "",
-    password: "",
     fullName: "",
-    role: "admin" as "admin" | "member",
+    role: "member" as "admin" | "member",
   });
 
+  // Project Member Management States
+  const [manageProjectOpen, setManageProjectOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [memberSearchTerm, setMemberSearchTerm] = useState("");
+
   useEffect(() => {
-    fetchMembers();
+    fetchData();
   }, []);
 
-  const fetchMembers = async () => {
+  const fetchData = async () => {
     try {
-      const [users, allTasks] = await Promise.all([
+      const [usersData, projectsData] = await Promise.all([
         userService.getAll(),
-        taskService.getAll(),
+        projectService.getAll(),
       ]);
 
-      setMembers(users);
-      setTasks(allTasks);
+      // Filter out current user from the main list if desired,
+      // but usually Admin wants to see everyone.
+      // The requirement said "Show members...".
+      // I'll keep everyone but maybe highlight the current user.
+      setMembers(usersData || []);
+      setProjects(projectsData || []);
     } catch (error: any) {
-      console.error("Error fetching members:", error);
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load team data");
     } finally {
       setLoading(false);
     }
   };
 
+  // --- Global User Management Handlers ---
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await userService.create(formData);
-      toast.success("User created successfully");
+      await userService.invite({
+        email: formData.email,
+        role: formData.role,
+        fullName: formData.fullName,
+      });
+      toast.success("Invitation sent successfully");
       setIsCreateDialogOpen(false);
-      setFormData({ email: "", password: "", fullName: "", role: "admin" });
-      fetchMembers();
+      setFormData({ email: "", fullName: "", role: "member" });
+      fetchData();
     } catch (error: any) {
-      toast.error(error.message || "Failed to create user");
+      toast.error(error.message || "Failed to send invitation");
     }
   };
 
@@ -102,7 +121,7 @@ export default function Team() {
       toast.success("User updated successfully");
       setIsEditDialogOpen(false);
       setSelectedUser(null);
-      fetchMembers();
+      fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to update user");
     }
@@ -116,7 +135,7 @@ export default function Team() {
       toast.success("User deleted successfully");
       setIsDeleteDialogOpen(false);
       setSelectedUser(null);
-      fetchMembers();
+      fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to delete user");
     }
@@ -126,9 +145,8 @@ export default function Team() {
     setSelectedUser(user);
     setFormData({
       email: user.email,
-      password: "",
       fullName: user.fullName || "",
-      role: user.role || "admin",
+      role: user.role || "member",
     });
     setIsEditDialogOpen(true);
   };
@@ -138,25 +156,95 @@ export default function Team() {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleResendInvitation = async (userId: string) => {
+    setResendingInvite(userId);
+    try {
+      await userService.resendInvitation(userId);
+      toast.success("Invitation email resent successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to resend invitation");
+    } finally {
+      setResendingInvite(null);
+    }
+  };
+
+  // --- Project Member Management Handlers ---
+
+  const openManageProjectDialog = (project: any) => {
+    setSelectedProject(project);
+    setManageProjectOpen(true);
+    setMemberSearchTerm("");
+  };
+
+  const handleAddMemberToProject = async (userId: string) => {
+    if (!selectedProject) return;
+    try {
+      await projectService.addMembers(selectedProject.id, [userId]);
+      toast.success("Member added to project");
+      fetchData(); // Refresh to update local state
+      // Update selectedProject local state to reflect change immediately for UI
+      setSelectedProject((prev: any) => ({
+        ...prev,
+        members: [...(prev.members || []), userId],
+      }));
+    } catch (error: any) {
+      toast.error("Failed to add member");
+    }
+  };
+
+  const handleRemoveMemberFromProject = async (userId: string) => {
+    if (!selectedProject) return;
+    try {
+      await projectService.removeMember(selectedProject.id, userId);
+      toast.success("Member removed from project");
+      fetchData();
+      setSelectedProject((prev: any) => ({
+        ...prev,
+        members: prev.members.filter((id: string) => id !== userId),
+      }));
+    } catch (error: any) {
+      toast.error("Failed to remove member");
+    }
+  };
+
+  const getProjectMembers = (project: any) => {
+    if (!project || !project.members) return [];
+    return members.filter((u) => project.members.includes(u.supabaseId));
+  };
+
+  const getAvailableMembersForProject = (project: any) => {
+    if (!project) return [];
+    const projectMemberIds = project.members || [];
+    return members
+      .filter((u) => !projectMemberIds.includes(u.supabaseId))
+      .filter(
+        (u) =>
+          u.fullName?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
+          u.email.toLowerCase().includes(memberSearchTerm.toLowerCase())
+      );
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in pb-10">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Team Members</h1>
-          <p className="text-muted-foreground">View and manage your team</p>
+          <h1 className="text-3xl font-bold tracking-tight">Team & Projects</h1>
+          <p className="text-muted-foreground">
+            Manage team members and project assignments
+          </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Add Member
+              Invite Member
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New User</DialogTitle>
+              <DialogTitle>Invite Team Member</DialogTitle>
               <DialogDescription>
-                Add a new team member to the system
+                Send an invitation email to a new team member.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateUser} className="space-y-4">
@@ -170,18 +258,7 @@ export default function Team() {
                     setFormData({ ...formData, email: e.target.value })
                   }
                   required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  required
+                  placeholder="colleague@company.com"
                 />
               </div>
               <div className="space-y-2">
@@ -192,6 +269,8 @@ export default function Team() {
                   onChange={(e) =>
                     setFormData({ ...formData, fullName: e.target.value })
                   }
+                  required
+                  placeholder="John Doe"
                 />
               </div>
               <div className="space-y-2">
@@ -219,69 +298,161 @@ export default function Team() {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Create User</Button>
+                <Button type="submit">Send Invitation</Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {members.map((member) => {
-          const memberTasks = tasks.filter(
-            (t) => t.assignedTo === member.supabaseId
-          );
-          const totalTasks = memberTasks.length;
-          const completedTasks = memberTasks.filter(
-            (t) => t.status === "completed"
-          ).length;
-          const role = member.role || "admin";
-
-          return (
-            <Card key={member.id} className="glass">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-14 w-14">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                      {member.email.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CardTitle className="text-lg truncate">
-                        {member.fullName || "No name"}
-                      </CardTitle>
-                      <Badge
-                        variant={role === "admin" ? "default" : "secondary"}
-                        className="capitalize shrink-0"
-                      >
-                        {role}
-                      </Badge>
+      {/* Projects Section */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Project Teams
+        </h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => {
+            const projectMembers = getProjectMembers(project);
+            return (
+              <Card key={project.id} className="glass flex flex-col">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{project.title}</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openManageProjectDialog(project)}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Manage
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground line-clamp-1">
+                    {project.description || "No description"}
+                  </p>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Members ({projectMembers.length})
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {member.email}
-                    </p>
+                    <div className="space-y-2">
+                      {projectMembers.slice(0, 5).map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center gap-2"
+                        >
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                              {(member.fullName || member.email)
+                                .charAt(0)
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm truncate">
+                            {member.fullName || member.email}
+                          </span>
+                        </div>
+                      ))}
+                      {projectMembers.length > 5 && (
+                        <p className="text-xs text-muted-foreground pl-8">
+                          +{projectMembers.length - 5} more
+                        </p>
+                      )}
+                      {projectMembers.length === 0 && (
+                        <p className="text-sm text-muted-foreground italic">
+                          No members assigned
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* All Members Section */}
+      <div className="space-y-4 pt-8 border-t">
+        <h2 className="text-xl font-semibold">All Team Members</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {members.map((member) => (
+            <Card
+              key={member.id}
+              className="glass hover:shadow-md transition-all"
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3 overflow-hidden flex-1">
+                    <Avatar className="h-10 w-10 border-2 border-background">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {(member.fullName || member.email)
+                          .charAt(0)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">
+                        {member.fullName || "No Name"}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {member.email}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Badge
+                      variant={
+                        member.role === "admin" ? "default" : "secondary"
+                      }
+                      className="shrink-0"
+                    >
+                      {member.role}
+                    </Badge>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Tasks assigned
-                    </span>
-                    <span className="font-medium">{totalTasks}</span>
+
+                {/* Status Badge */}
+                {member.status === "pending" && (
+                  <div className="mb-3">
+                    <Badge
+                      variant="outline"
+                      className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20"
+                    >
+                      Pending Activation
+                    </Badge>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Completed</span>
-                    <span className="font-medium">{completedTasks}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-2">
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-1 justify-end">
+                  {member.status === "pending" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() => handleResendInvitation(member.id)}
+                      disabled={resendingInvite === member.id}
+                    >
+                      {resendingInvite === member.id ? (
+                        <>
+                          <div className="mr-1 h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="h-3 w-3 mr-1" />
+                          Resend Invite
+                        </>
+                      )}
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="hover:bg-accent"
+                    className="h-8 w-8"
                     onClick={() => openEditDialog(member)}
                   >
                     <Pencil className="h-4 w-4" />
@@ -289,37 +460,129 @@ export default function Team() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="hover:bg-destructive/10"
+                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={() => openDeleteDialog(member)}
-                    disabled={member.supabaseId === user?.id}
-                    title={
-                      member.supabaseId === user?.id
-                        ? "You cannot delete your own account"
-                        : "Delete user"
-                    }
+                    disabled={member.supabaseId === currentUser?.id}
                   >
-                    <Trash2
-                      className={`h-4 w-4 ${
-                        member.supabaseId === user?.id
-                          ? "text-muted-foreground"
-                          : "text-destructive"
-                      }`}
-                    />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      {members.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No team members found</p>
-        </div>
-      )}
+      {/* Manage Project Members Dialog */}
+      <Dialog open={manageProjectOpen} onOpenChange={setManageProjectOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Project Team</DialogTitle>
+            <DialogDescription>{selectedProject?.title}</DialogDescription>
+          </DialogHeader>
 
-      {/* Edit Dialog */}
+          <div className="space-y-6">
+            {/* Current Members */}
+            <div className="space-y-2">
+              <Label>Current Members</Label>
+              <ScrollArea className="h-40 border rounded-md p-2">
+                <div className="space-y-1">
+                  {getProjectMembers(selectedProject).map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-[10px]">
+                            {(member.fullName || member.email)
+                              .charAt(0)
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">
+                          {member.fullName || member.email}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-destructive"
+                        onClick={() =>
+                          handleRemoveMemberFromProject(member.supabaseId)
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {getProjectMembers(selectedProject).length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No members in this project
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Add Members */}
+            <div className="space-y-2">
+              <Label>Add Team Members</Label>
+              <Input
+                placeholder="Search members..."
+                value={memberSearchTerm}
+                onChange={(e) => setMemberSearchTerm(e.target.value)}
+                className="h-8"
+              />
+              <ScrollArea className="h-40 border rounded-md p-2">
+                <div className="space-y-1">
+                  {getAvailableMembersForProject(selectedProject).map(
+                    (member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-[10px]">
+                              {(member.fullName || member.email)
+                                .charAt(0)
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm">
+                            {member.fullName || member.email}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() =>
+                            handleAddMemberToProject(member.supabaseId)
+                          }
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    )
+                  )}
+                  {getAvailableMembersForProject(selectedProject).length ===
+                    0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      {memberSearchTerm
+                        ? "No matching members found"
+                        : "All members added"}
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>

@@ -85,7 +85,6 @@ export default function Team() {
   // Project Member Management States
   const [manageProjectOpen, setManageProjectOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [memberSearchTerm, setMemberSearchTerm] = useState("");
 
   const { data: members = [], isLoading: isLoadingMembers } = useQuery({
     queryKey: ["users"],
@@ -214,7 +213,6 @@ export default function Team() {
   const openManageProjectDialog = (project: Project) => {
     setSelectedProject(project);
     setManageProjectOpen(true);
-    setMemberSearchTerm("");
   };
 
   const handleAddMemberToProject = async (userId: string) => {
@@ -268,13 +266,7 @@ export default function Team() {
   const getAvailableMembersForProject = (project: Project) => {
     if (!project) return [];
     const projectMemberIds = project.members || [];
-    return members
-      .filter((u) => !projectMemberIds.includes(u.supabaseId))
-      .filter(
-        (u) =>
-          u.fullName?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
-          u.email.toLowerCase().includes(memberSearchTerm.toLowerCase())
-      );
+    return members.filter((u) => !projectMemberIds.includes(u.supabaseId));
   };
 
   return (
@@ -655,55 +647,29 @@ export default function Team() {
             {/* Add Members */}
             <div className="space-y-2">
               <Label>Add Team Members</Label>
-              <Input
-                placeholder="Search members..."
-                value={memberSearchTerm}
-                onChange={(e) => setMemberSearchTerm(e.target.value)}
-                className="h-8"
-              />
-              <ScrollArea className="h-40 border rounded-md p-2">
-                <div className="space-y-1">
+              <Select
+                onValueChange={(value) => {
+                  handleAddMemberToProject(value);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select member to add..." />
+                </SelectTrigger>
+                <SelectContent>
                   {getAvailableMembersForProject(selectedProject).map(
                     (member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center justify-between p-2 hover:bg-muted/50 rounded-md"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-[10px]">
-                              {(member.fullName || member.email)
-                                .charAt(0)
-                                .toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm">
-                            {member.fullName || member.email}
-                          </span>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-6 px-2 text-xs"
-                          onClick={() =>
-                            handleAddMemberToProject(member.supabaseId)
-                          }
-                        >
-                          Add
-                        </Button>
-                      </div>
+                      <SelectItem key={member.id} value={member.supabaseId}>
+                        {member.fullName || member.email}
+                      </SelectItem>
                     )
                   )}
-                  {getAvailableMembersForProject(selectedProject).length ===
-                    0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      {memberSearchTerm
-                        ? "No matching members found"
-                        : "All members added"}
-                    </p>
-                  )}
-                </div>
-              </ScrollArea>
+                </SelectContent>
+              </Select>
+              {getAvailableMembersForProject(selectedProject).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  All members added
+                </p>
+              )}
             </div>
           </div>
         </DialogContent>

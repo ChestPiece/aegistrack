@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/shared/components/ui/badge";
 import { Archive, RotateCcw, Trash2, FolderOpen, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { DashboardSkeleton } from "@/shared/components/skeletons/DashboardSkeleton";
 import { Project, Task } from "@/shared/types";
 import {
   Tabs,
@@ -110,11 +111,7 @@ export default function ArchivedPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-muted-foreground">Loading archived items...</div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

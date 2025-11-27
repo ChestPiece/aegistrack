@@ -11,6 +11,7 @@ import { Button } from "@/shared/components/ui/button";
 import { Bell, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Notification } from "@/shared/types";
+import { TableSkeleton } from "@/shared/components/skeletons/TableSkeleton";
 
 export default function Notifications() {
   const { user } = useAuth();
@@ -56,6 +57,10 @@ export default function Notifications() {
   };
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  if (loading) {
+    return <TableSkeleton />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl">

@@ -41,11 +41,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import { MultiSelect } from "@/shared/components/ui/multi-select";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
+import { DashboardSkeleton } from "@/shared/components/skeletons/DashboardSkeleton";
 
 export default function Tasks() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, userRole } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -58,7 +60,8 @@ export default function Tasks() {
     title: string;
     description: string;
     project_id: string;
-    assigned_to: string;
+
+    assigned_to: string[];
     deadline: string;
     status: "pending" | "in_progress" | "completed" | "archived";
     priority: "low" | "medium" | "high";
@@ -66,7 +69,7 @@ export default function Tasks() {
     title: "",
     description: "",
     project_id: "",
-    assigned_to: "",
+    assigned_to: [],
     deadline: "",
     status: "pending",
     priority: "medium",
@@ -120,10 +123,7 @@ export default function Tasks() {
       await taskService.create({
         ...formData,
         deadline: formData.deadline || null,
-        assignedTo:
-          formData.assigned_to === "__unassigned__"
-            ? null
-            : formData.assigned_to || null,
+        assignedTo: formData.assigned_to,
         projectId: formData.project_id,
       });
 
@@ -133,7 +133,7 @@ export default function Tasks() {
         title: "",
         description: "",
         project_id: "",
-        assigned_to: "",
+        assigned_to: [],
         deadline: "",
         status: "pending",
         priority: "medium",
@@ -184,7 +184,7 @@ export default function Tasks() {
       description: task.description || "",
       project_id:
         (task.projectId as Project)?.id || (task.projectId as string) || "",
-      assigned_to: task.assignedTo || "",
+      assigned_to: task.assignedTo || [],
       deadline: task.deadline
         ? new Date(task.deadline).toISOString().split("T")[0]
         : "",
@@ -203,10 +203,7 @@ export default function Tasks() {
         title: formData.title,
         description: formData.description,
         deadline: formData.deadline || null,
-        assignedTo:
-          formData.assigned_to === "__unassigned__"
-            ? null
-            : formData.assigned_to || null,
+        assignedTo: formData.assigned_to,
         projectId: formData.project_id,
         priority: formData.priority,
       });
@@ -217,7 +214,7 @@ export default function Tasks() {
         title: "",
         description: "",
         project_id: "",
-        assigned_to: "",
+        assigned_to: [],
         deadline: "",
         status: "pending",
         priority: "medium",
@@ -252,10 +249,14 @@ export default function Tasks() {
     }
   };
 
-  const getAssignedUser = (userId: string | null) => {
-    if (!userId) return null;
-    return users.find((u) => u.supabaseId === userId);
+  const getAssignedUsers = (userIds: string[] | undefined) => {
+    if (!userIds || userIds.length === 0) return [];
+    return users.filter((u) => userIds.includes(u.supabaseId));
   };
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
@@ -349,39 +350,30 @@ export default function Tasks() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="assigned" className="text-sm font-medium">
+                  <Label className="text-sm font-medium">
                     Assign to (optional)
                   </Label>
-                  <Select
-                    value={formData.assigned_to}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, assigned_to: value })
+                  <MultiSelect
+                    options={projectMembers.map((user) => ({
+                      value: user.supabaseId,
+                      label: user.fullName || user.email,
+                      subtitle: user.email,
+                    }))}
+                    selected={formData.assigned_to}
+                    onChange={(selected) =>
+                      setFormData({ ...formData, assigned_to: selected })
                     }
-                    disabled={!formData.project_id}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue
-                        placeholder={
-                          formData.project_id
-                            ? "Select member"
-                            : "Select project first"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__unassigned__">Unassigned</SelectItem>
-                      {projectMembers.map((user) => (
-                        <SelectItem key={user.id} value={user.supabaseId}>
-                          {user.fullName || user.email}
-                        </SelectItem>
-                      ))}
-                      {projectMembers.length === 0 && formData.project_id && (
-                        <SelectItem value="__no_members__" disabled>
-                          No members in this project
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                    placeholder={
+                      formData.project_id
+                        ? "Select members..."
+                        : "Select project first"
+                    }
+                    className={
+                      !formData.project_id
+                        ? "opacity-50 pointer-events-none"
+                        : ""
+                    }
+                  />
                   {formData.project_id && (
                     <p className="text-xs text-muted-foreground">
                       {projectMembers.length} member(s) in this project
@@ -515,34 +507,28 @@ export default function Tasks() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="edit-assigned" className="text-sm font-medium">
+                <Label className="text-sm font-medium">
                   Assign to (optional)
                 </Label>
-                <Select
-                  value={formData.assigned_to}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, assigned_to: value })
+                <MultiSelect
+                  options={projectMembers.map((user) => ({
+                    value: user.supabaseId,
+                    label: user.fullName || user.email,
+                    subtitle: user.email,
+                  }))}
+                  selected={formData.assigned_to}
+                  onChange={(selected) =>
+                    setFormData({ ...formData, assigned_to: selected })
                   }
-                  disabled={!formData.project_id}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue
-                      placeholder={
-                        formData.project_id
-                          ? "Select member"
-                          : "Select project first"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__unassigned__">Unassigned</SelectItem>
-                    {projectMembers.map((user) => (
-                      <SelectItem key={user.id} value={user.supabaseId}>
-                        {user.fullName || user.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder={
+                    formData.project_id
+                      ? "Select members..."
+                      : "Select project first"
+                  }
+                  className={
+                    !formData.project_id ? "opacity-50 pointer-events-none" : ""
+                  }
+                />
               </div>
 
               <div className="space-y-1.5">
@@ -596,8 +582,11 @@ export default function Tasks() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {tasks.map((task, index) => {
-          const assignedUser = getAssignedUser(task.assignedTo);
-          const canEdit = task.assignedTo === currentUser?.id;
+          const assignedUsers = getAssignedUsers(task.assignedTo);
+          const canEdit =
+            userRole === "admin" ||
+            (task.assignedTo &&
+              task.assignedTo.includes(currentUser?.id || ""));
 
           return (
             <GlassCard
@@ -660,7 +649,11 @@ export default function Tasks() {
                       onClick={() => openEditDialog(task)}
                       className="h-8 w-8 p-0"
                       disabled={!canEdit}
-                      title={!canEdit ? "Only assignee can edit" : "Edit task"}
+                      title={
+                        !canEdit
+                          ? "Only admins and assignees can edit"
+                          : "Edit task"
+                      }
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -688,23 +681,33 @@ export default function Tasks() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/50">
                   <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8 border-2 border-background">
-                      <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                        {assignedUser
-                          ? (assignedUser.fullName || assignedUser.email || "U")
-                              .charAt(0)
-                              .toUpperCase()
-                          : "?"}
-                      </AvatarFallback>
-                    </Avatar>
                     <div className="flex flex-col">
-                      <span className="text-xs font-medium">
-                        {assignedUser
-                          ? assignedUser.fullName || assignedUser.email
-                          : "Unassigned"}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        Assignee
+                      <div className="flex -space-x-2 overflow-hidden">
+                        {assignedUsers.length > 0 ? (
+                          assignedUsers.map((user) => (
+                            <Avatar
+                              key={user.id}
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-background"
+                            >
+                              <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">
+                                {(user.fullName || user.email || "U")
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">
+                            Unassigned
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground mt-1">
+                        {assignedUsers.length > 0
+                          ? `${assignedUsers.length} Assignee${
+                              assignedUsers.length > 1 ? "s" : ""
+                            }`
+                          : "No Assignees"}
                       </span>
                     </div>
                   </div>

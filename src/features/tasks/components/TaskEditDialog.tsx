@@ -18,9 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shared/components/ui/select";
+import { MultiSelect } from "@/shared/components/ui/multi-select";
 import { toast } from "sonner";
-import { taskService } from "@/shared/services/api";
-import { Task } from "@/shared/types";
+import { taskService, userService } from "@/shared/services/api";
+import { Task, User } from "@/shared/types";
+import { useAuth } from "@/shared/contexts/AuthContext";
 
 interface TaskEditDialogProps {
   task: Task | null;
@@ -34,8 +36,16 @@ export function TaskEditDialog({
   onOpenChange,
 }: TaskEditDialogProps) {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<Partial<Task>>({});
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      userService.getAll().then(setAvailableUsers).catch(console.error);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (task) {
@@ -44,6 +54,7 @@ export function TaskEditDialog({
         description: task.description || "",
         status: task.status,
         priority: task.priority || "medium",
+        assignedTo: task.assignedTo || [],
         deadline: task.deadline
           ? new Date(task.deadline).toISOString().split("T")[0]
           : "",
@@ -140,6 +151,22 @@ export function TaskEditDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Assign To</Label>
+            <MultiSelect
+              options={availableUsers.map((user) => ({
+                value: user.supabaseId,
+                label: user.fullName || user.email,
+                subtitle: user.email,
+              }))}
+              selected={formData.assignedTo || []}
+              onChange={(selected) =>
+                setFormData({ ...formData, assignedTo: selected })
+              }
+              placeholder="Select members..."
+            />
           </div>
 
           <div className="space-y-2">

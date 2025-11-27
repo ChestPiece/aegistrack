@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿h { useState } from "react";
 import { projectService, userService } from "@/shared/services/api";
 import { User, Project, Task } from "@/shared/types";
 import { useAuth } from "@/shared/contexts/AuthContext";
@@ -49,7 +49,6 @@ export default function Projects() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [memberSearchTerm, setMemberSearchTerm] = useState("");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<{
@@ -139,7 +138,6 @@ export default function Projects() {
   const openMemberDialog = (project: Project) => {
     setSelectedProject(project);
     setMemberDialogOpen(true);
-    setMemberSearchTerm("");
   };
 
   const handleAddMember = async (userId: string) => {
@@ -175,14 +173,8 @@ export default function Projects() {
 
   const getAvailableMembers = () => {
     if (!selectedProject) return [];
-    const filtered = users.filter(
+    return users.filter(
       (user) => !selectedProject.members?.includes(user.supabaseId)
-    );
-    if (!memberSearchTerm) return filtered;
-    return filtered.filter(
-      (user) =>
-        user.fullName?.toLowerCase().includes(memberSearchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(memberSearchTerm.toLowerCase())
     );
   };
 
@@ -286,7 +278,10 @@ export default function Projects() {
                   <Select
                     value={formData.priority}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, priority: value as "low" | "medium" | "high" })
+                      setFormData({
+                        ...formData,
+                        priority: value as "low" | "medium" | "high",
+                      })
                     }
                   >
                     <SelectTrigger className="h-10">
@@ -410,7 +405,10 @@ export default function Projects() {
               <Select
                 value={formData.priority}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, priority: value as "low" | "medium" | "high" })
+                  setFormData({
+                    ...formData,
+                    priority: value as "low" | "medium" | "high",
+                  })
                 }
               >
                 <SelectTrigger className="h-10">
@@ -643,56 +641,34 @@ export default function Projects() {
             {/* Add Members */}
             <div className="space-y-2">
               <Label>Add Members</Label>
-              <Input
-                placeholder="Search by name or email..."
-                value={memberSearchTerm}
-                onChange={(e) => setMemberSearchTerm(e.target.value)}
-                className="mb-2"
-              />
-              <ScrollArea className="h-48 w-full rounded-md border">
-                <div className="p-4 space-y-2">
+              <Select
+                onValueChange={(value) => {
+                  handleAddMember(value);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select member to add..." />
+                </SelectTrigger>
+                <SelectContent>
                   {getAvailableMembers().map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-xs font-medium">
-                            {(user.fullName || user.email)
-                              .charAt(0)
-                              .toUpperCase()}
+                    <SelectItem key={user.id} value={user.supabaseId}>
+                      <div className="flex flex-col">
+                        <span>{user.fullName || user.email}</span>
+                        {user.fullName && (
+                          <span className="text-xs text-muted-foreground">
+                            {user.email}
                           </span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">
-                            {user.fullName || user.email}
-                          </p>
-                          {user.fullName && (
-                            <p className="text-xs text-muted-foreground">
-                              {user.email}
-                            </p>
-                          )}
-                        </div>
+                        )}
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddMember(user.supabaseId)}
-                      >
-                        Add
-                      </Button>
-                    </div>
+                    </SelectItem>
                   ))}
-                  {getAvailableMembers().length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      {memberSearchTerm
-                        ? "No users found"
-                        : "All users are already members"}
-                    </p>
-                  )}
-                </div>
-              </ScrollArea>
+                </SelectContent>
+              </Select>
+              {getAvailableMembers().length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  All users are already members
+                </p>
+              )}
             </div>
           </div>
         </DialogContent>

@@ -24,7 +24,7 @@ const AdminDashboard = lazy(
   () => import("../features/dashboard/pages/AdminDashboard")
 );
 const UserDashboard = lazy(
-  () => import("../features/dashboard/pages/UserDashboard")
+  () => import("../features/dashboard/pages/MemberDashboard")
 );
 const Projects = lazy(() => import("../features/projects/pages/ProjectsPage"));
 const Tasks = lazy(() => import("../features/tasks/pages/TasksPage"));

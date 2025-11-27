@@ -43,7 +43,7 @@ export interface Task {
   status: "pending" | "in_progress" | "completed" | "archived";
   deadline?: string;
   projectId?: Project | string;
-  assignedTo?: string;
+  assignedTo?: string[];
   createdBy: string;
   createdAt: string;
   updatedAt: string;

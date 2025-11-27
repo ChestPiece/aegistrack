@@ -64,9 +64,8 @@ export default function AuthCallback() {
           setCountdown(counter);
           if (counter === 0) {
             clearInterval(interval);
-            // Sign out the user so they have to log in manually
-            await supabase.auth.signOut();
-            navigate("/auth/login");
+            // Redirect to dashboard directly
+            navigate("/dashboard");
           }
         }, 1000);
 
@@ -133,10 +132,11 @@ export default function AuthCallback() {
           {status === "success" && (
             <div className="text-center bg-muted/50 rounded-lg p-4 border border-border/50">
               <p className="text-sm text-muted-foreground mb-2">
-                You can now login with the credentials provided by your admin.
+                You have been successfully verified. Redirecting you to the
+                dashboard...
               </p>
               <p className="text-lg font-semibold">
-                Redirecting to login in {countdown}...
+                Redirecting in {countdown}...
               </p>
             </div>
           )}

@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useEffect, useState } from "react";
+﻿import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { userService, authService } from "@/shared/services/api";
@@ -31,6 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const previousUserId = useRef<string | null>(null);
 
   // Enable real-time database synchronization
   useDatabaseSync(user?.id || null);
@@ -72,16 +74,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      const currentUserId = session?.user?.id ?? null;
+
+      // If user changed, clear previous user data immediately to prevent stale state
+      if (currentUserId !== previousUserId.current) {
+        setUserRole(null);
+        setUserData(null);
+        previousUserId.current = currentUserId;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        setTimeout(() => {
-          fetchUserRole(session.user.id);
-        }, 0);
+        // Fetch new user data
+        fetchUserRole(session.user.id);
       } else {
         setUserRole(null);
         setUserData(null);
+        setLoading(false);
       }
     });
 
@@ -89,6 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      previousUserId.current = session?.user?.id ?? null;
+
       if (session?.user) {
         fetchUserRole(session.user.id);
       } else {

@@ -1,14 +1,20 @@
 ﻿import { useEffect, useState } from "react";
 import { notificationService } from "@/shared/services/api";
 import { useAuth } from "@/shared/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import { Bell, Check } from "lucide-react";
 import { toast } from "sonner";
+import { Notification } from "@/shared/types";
 
 export default function Notifications() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +27,7 @@ export default function Notifications() {
     try {
       const data = await notificationService.getAll();
       setNotifications(data);
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to load notifications");
     } finally {
       setLoading(false);
@@ -34,7 +40,7 @@ export default function Notifications() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to mark as read");
     }
   };
@@ -44,7 +50,7 @@ export default function Notifications() {
       await notificationService.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       toast.success("All notifications marked as read");
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to mark all as read");
     }
   };
@@ -117,4 +123,3 @@ export default function Notifications() {
     </div>
   );
 }
-

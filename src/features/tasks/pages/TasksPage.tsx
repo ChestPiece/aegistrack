@@ -4,6 +4,7 @@ import {
   projectService,
   userService,
 } from "@/shared/services/api";
+import { Task, Project, User } from "@/shared/types";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import {
   CardContent,
@@ -15,7 +16,7 @@ import { Button } from "@/shared/components/ui/button";
 import {
   Plus,
   Calendar,
-  User,
+  User as UserIcon,
   Clock,
   Pencil,
   Archive,
@@ -45,21 +46,29 @@ import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 
 export default function Tasks() {
   const { user: currentUser } = useAuth();
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [projectMembers, setProjectMembers] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [projectMembers, setProjectMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<any>(null);
-  const [formData, setFormData] = useState({
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    project_id: string;
+    assigned_to: string;
+    deadline: string;
+    status: "pending" | "in_progress" | "completed" | "archived";
+    priority: "low" | "medium" | "high";
+  }>({
     title: "",
     description: "",
     project_id: "",
     assigned_to: "",
     deadline: "",
-    status: "pending" as "pending" | "in_progress" | "completed",
+    status: "pending",
     priority: "medium",
   });
 
@@ -78,7 +87,7 @@ export default function Tasks() {
       setTasks(tasks || []);
       setProjects(projects || []);
       setUsers(users || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Failed to load data");
     } finally {
@@ -130,7 +139,7 @@ export default function Tasks() {
         priority: "medium",
       });
       fetchData();
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to create task");
     }
   };
@@ -143,7 +152,7 @@ export default function Tasks() {
       await taskService.update(taskId, { status: newStatus });
       toast.success("Task status updated");
       fetchData();
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to update task");
     }
   };
@@ -153,27 +162,28 @@ export default function Tasks() {
       await taskService.update(taskId, { status: "archived" });
       toast.success("Task archived successfully");
       fetchData();
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to archive task");
     }
   };
 
-  const handleFlagTask = async (task: any) => {
+  const handleFlagTask = async (task: Task) => {
     try {
       await taskService.update(task.id, { flagged: !task.flagged });
       toast.success(task.flagged ? "Task unflagged" : "Task flagged");
       fetchData();
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to update flag status");
     }
   };
 
-  const openEditDialog = (task: any) => {
+  const openEditDialog = (task: Task) => {
     setEditingTask(task);
     setFormData({
       title: task.title,
       description: task.description || "",
-      project_id: task.projectId?.id || task.projectId || "",
+      project_id:
+        (task.projectId as Project)?.id || (task.projectId as string) || "",
       assigned_to: task.assignedTo || "",
       deadline: task.deadline
         ? new Date(task.deadline).toISOString().split("T")[0]
@@ -213,7 +223,7 @@ export default function Tasks() {
         priority: "medium",
       });
       fetchData();
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to update task");
     }
   };
@@ -319,7 +329,10 @@ export default function Tasks() {
                   <Select
                     value={formData.priority}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, priority: value })
+                      setFormData({
+                        ...formData,
+                        priority: value as "low" | "medium" | "high",
+                      })
                     }
                   >
                     <SelectTrigger className="h-10">
@@ -482,7 +495,10 @@ export default function Tasks() {
                 <Select
                   value={formData.priority}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, priority: value })
+                    setFormData({
+                      ...formData,
+                      priority: value as "low" | "medium" | "high",
+                    })
                   }
                 >
                   <SelectTrigger className="h-10">
@@ -604,11 +620,15 @@ export default function Tasks() {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="font-medium text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full">
-                        {task.projects?.title || "No Project"}
+                        {(task.projectId as Project)?.title || "No Project"}
                       </span>
                       <Badge
                         variant={
-                          getPriorityColor(task.priority || "medium") as any
+                          getPriorityColor(task.priority || "medium") as
+                            | "default"
+                            | "secondary"
+                            | "destructive"
+                            | "outline"
                         }
                         className="text-[10px] px-1.5 py-0 h-4"
                       >

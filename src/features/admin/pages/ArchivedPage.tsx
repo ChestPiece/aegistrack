@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/shared/components/ui/badge";
 import { Archive, RotateCcw, Trash2, FolderOpen, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { Project, Task } from "@/shared/types";
 import {
   Tabs,
   TabsContent,
@@ -29,8 +30,8 @@ import {
 } from "@/shared/components/ui/alert-dialog";
 
 export default function ArchivedPage() {
-  const [archivedProjects, setArchivedProjects] = useState<any[]>([]);
-  const [archivedTasks, setArchivedTasks] = useState<any[]>([]);
+  const [archivedProjects, setArchivedProjects] = useState<Project[]>([]);
+  const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{
@@ -52,7 +53,7 @@ export default function ArchivedPage() {
 
       setArchivedProjects(projects || []);
       setArchivedTasks(tasks || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error fetching archived items:", error);
       toast.error("Failed to load archived items");
     } finally {
@@ -65,7 +66,7 @@ export default function ArchivedPage() {
       await projectService.update(projectId, { status: "active" });
       toast.success("Project restored successfully");
       fetchArchivedItems();
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to restore project");
     }
   };
@@ -75,7 +76,7 @@ export default function ArchivedPage() {
       await taskService.update(taskId, { status: "pending" });
       toast.success("Task restored successfully");
       fetchArchivedItems();
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to restore task");
     }
   };
@@ -103,7 +104,7 @@ export default function ArchivedPage() {
       setDeleteDialogOpen(false);
       setItemToDelete(null);
       fetchArchivedItems();
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Failed to delete item");
     }
   };

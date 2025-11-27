@@ -1,17 +1,17 @@
-import { api } from "@/shared/services/api-client";
+import { api } from "./api-client";
 import { User } from "@/shared/types";
 
 export const userService = {
-  sync: (): Promise<User> =>
-    api.post<User, Record<string, never>>("/users/sync", {}),
+  getProfile: (): Promise<User> => api.get<User>("/users/me"),
   getCurrent: (): Promise<User> => api.get<User>("/users/me"),
+  sync: (): Promise<User> => api.post<User>("/users/sync", {}),
   updateProfile: (data: {
     fullName?: string;
+    avatarUrl?: string;
     phoneNumber?: string;
     company?: string;
     bio?: string;
     location?: string;
-    avatarUrl?: string;
   }): Promise<User> => api.put<User, typeof data>("/users/profile", data),
   getAll: (): Promise<User[]> => api.get<User[]>("/users"),
   create: (data: {
@@ -54,6 +54,11 @@ export const userService = {
   enable: (id: string): Promise<{ message: string; user: User }> =>
     api.patch<{ message: string; user: User }, Record<string, never>>(
       `/users/${id}/enable`,
+      {}
+    ),
+  rejectReactivation: (id: string): Promise<{ message: string; user: User }> =>
+    api.patch<{ message: string; user: User }, Record<string, never>>(
+      `/users/${id}/reject-reactivation`,
       {}
     ),
 };

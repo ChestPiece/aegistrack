@@ -298,6 +298,9 @@ export const disableUser = async (req: AuthRequest, res: Response) => {
     }
 
     user.isActive = false;
+    user.disabledBy = requesterId;
+    user.reactivationRequested = false; // Reset any previous request
+    user.reactivationRequestedAt = undefined;
     await user.save();
 
     // Notify admin
@@ -353,7 +356,83 @@ export const enableUser = async (req: AuthRequest, res: Response) => {
 
     res.json({ message: "User enabled successfully", user });
   } catch (error) {
-    console.error("Error enabling user:", error);
     res.status(500).json({ error: "Error enabling user" });
+  }
+};
+
+export const requestReactivation = async (req: AuthRequest, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.isActive) {
+      return res.status(400).json({ error: "Account is already active" });
+    }
+
+    if (user.reactivationRequested) {
+      return res
+        .status(400)
+        .json({ error: "Reactivation request already pending" });
+    }
+
+    user.reactivationRequested = true;
+    user.reactivationRequestedAt = new Date();
+    await user.save();
+
+    // Notify the admin who disabled the user
+    if (user.disabledBy) {
+      await Notification.create({
+        userId: user.disabledBy,
+        title: "Reactivation Request",
+        message: `${
+          user.fullName || user.email
+        } has requested account reactivation.`,
+        type: "info",
+      });
+    }
+
+    res.json({ message: "Reactivation request sent successfully" });
+  } catch (error) {
+    console.error("Error requesting reactivation:", error);
+    res.status(500).json({ error: "Error requesting reactivation" });
+  }
+};
+
+export const rejectReactivation = async (req: AuthRequest, res: Response) => {
+  try {
+    const requesterId = req.user.id;
+    const requester = await User.findOne({ supabaseId: requesterId });
+
+    if (requester?.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admin only." });
+    }
+
+    const { id } = req.params;
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    user.reactivationRequested = false;
+    user.reactivationRequestedAt = undefined;
+    await user.save();
+
+    // Notify the user? Maybe not necessary for rejection, or maybe "Request Denied"
+    // For now, just clear the request.
+
+    res.json({ message: "Reactivation request rejected" });
+  } catch (error) {
+    console.error("Error rejecting reactivation:", error);
+    res.status(500).json({ error: "Error rejecting reactivation" });
   }
 };

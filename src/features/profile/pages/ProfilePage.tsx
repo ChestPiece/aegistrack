@@ -49,8 +49,8 @@ export default function Profile() {
       await userService.updateProfile(formData);
       await refreshUserData();
       toast.success("Profile updated successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update profile");
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to update profile");
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,9 @@ export interface User {
   role?: "admin" | "member";
   status?: "pending" | "active";
   isActive?: boolean;
+  disabledBy?: string;
+  reactivationRequested?: boolean;
+  reactivationRequestedAt?: string;
   addedBy?: string;
   createdAt: string;
   updatedAt: string;
@@ -28,6 +31,7 @@ export interface Project {
   taskCount?: number;
   completedTaskCount?: number;
   memberCount?: number;
+  priority?: "low" | "medium" | "high";
   createdAt: string;
   updatedAt: string;
 }
@@ -36,13 +40,15 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  status: "pending" | "in_progress" | "completed";
+  status: "pending" | "in_progress" | "completed" | "archived";
   deadline?: string;
   projectId?: Project | string;
   assignedTo?: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  flagged?: boolean;
+  priority?: "low" | "medium" | "high";
 }
 
 export interface Notification {

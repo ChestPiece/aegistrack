@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { userService, projectService } from "@/shared/services/api";
 import { User, Project } from "@/types";
 import {
@@ -53,12 +53,12 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/shared/contexts/AuthContext";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { TableSkeleton } from "@/shared/components/skeletons/TableSkeleton";
 
 export default function Team() {
   const { user: currentUser } = useAuth();
-  const [members, setMembers] = useState<User[]>([]);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [resendingInvite, setResendingInvite] = useState<string | null>(null);
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
 
@@ -81,12 +81,18 @@ export default function Team() {
 
   // Project Member Management States
   const [manageProjectOpen, setManageProjectOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const { data: members = [], isLoading: isLoadingMembers } = useQuery({
+    queryKey: ["users"],
+    queryFn: userService.getAll,
+  });
+
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => projectService.getAll(),
+  });
 
   useEffect(() => {
     setPasswordValidations({
@@ -96,26 +102,11 @@ export default function Team() {
     });
   }, [formData.password]);
 
-  const fetchData = async () => {
-    try {
-      const [usersData, projectsData] = await Promise.all([
-        userService.getAll(),
-        projectService.getAll(),
-      ]);
+  const isLoading = isLoadingMembers || isLoadingProjects;
 
-      // Filter out current user from the main list if desired,
-      // but usually Admin wants to see everyone.
-      // The requirement said "Show members...".
-      // I'll keep everyone but maybe highlight the current user.
-      setMembers(usersData || []);
-      setProjects(projectsData || []);
-    } catch (error: any) {
-      console.error("Error fetching data:", error);
-      toast.error("Failed to load team data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (isLoading) {
+    return <TableSkeleton />;
+  }
 
   // --- Global User Management Handlers ---
 
@@ -139,9 +130,10 @@ export default function Team() {
       toast.success("Team member invited successfully");
       setIsCreateDialogOpen(false);
       setFormData({ email: "", fullName: "", role: "member", password: "" });
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send invitation");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to send invitation");
     }
   };
 
@@ -157,9 +149,10 @@ export default function Team() {
       toast.success("User updated successfully");
       setIsEditDialogOpen(false);
       setSelectedUser(null);
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update user");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to update user");
     }
   };
 
@@ -171,9 +164,10 @@ export default function Team() {
       toast.success("User deleted successfully");
       setIsDeleteDialogOpen(false);
       setSelectedUser(null);
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete user");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to delete user");
     }
   };
 
@@ -183,6 +177,7 @@ export default function Team() {
       email: user.email,
       fullName: user.fullName || "",
       role: user.role || "member",
+      password: "",
     });
     setIsEditDialogOpen(true);
   };
@@ -197,8 +192,8 @@ export default function Team() {
     try {
       await userService.resendInvitation(userId);
       toast.success("Invitation email resent successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to resend invitation");
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to resend invitation");
     } finally {
       setResendingInvite(null);
     }
@@ -217,9 +212,10 @@ export default function Team() {
         await userService.enable(userId);
         toast.success("User account enabled");
       }
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update user status");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to update user status");
     } finally {
       setTogglingStatus(null);
     }
@@ -227,7 +223,7 @@ export default function Team() {
 
   // --- Project Member Management Handlers ---
 
-  const openManageProjectDialog = (project: any) => {
+  const openManageProjectDialog = (project: Project) => {
     setSelectedProject(project);
     setManageProjectOpen(true);
     setMemberSearchTerm("");
@@ -238,13 +234,18 @@ export default function Team() {
     try {
       await projectService.addMembers(selectedProject.id, [userId]);
       toast.success("Member added to project");
-      fetchData(); // Refresh to update local state
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] }); // Refresh to update local state
       // Update selectedProject local state to reflect change immediately for UI
-      setSelectedProject((prev: any) => ({
-        ...prev,
-        members: [...(prev.members || []), userId],
-      }));
-    } catch (error: any) {
+      setSelectedProject((prev) =>
+        prev
+          ? {
+              ...prev,
+              members: [...(prev.members || []), userId],
+            }
+          : null
+      );
+    } catch (error) {
       toast.error("Failed to add member");
     }
   };
@@ -254,22 +255,29 @@ export default function Team() {
     try {
       await projectService.removeMember(selectedProject.id, userId);
       toast.success("Member removed from project");
-      fetchData();
-      setSelectedProject((prev: any) => ({
-        ...prev,
-        members: prev.members.filter((id: string) => id !== userId),
-      }));
-    } catch (error: any) {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      setSelectedProject((prev) =>
+        prev
+          ? {
+              ...prev,
+              members: (prev.members || []).filter(
+                (id: string) => id !== userId
+              ),
+            }
+          : null
+      );
+    } catch (error) {
       toast.error("Failed to remove member");
     }
   };
 
-  const getProjectMembers = (project: any) => {
+  const getProjectMembers = (project: Project) => {
     if (!project || !project.members) return [];
     return members.filter((u) => project.members.includes(u.supabaseId));
   };
 
-  const getAvailableMembersForProject = (project: any) => {
+  const getAvailableMembersForProject = (project: Project) => {
     if (!project) return [];
     const projectMemberIds = project.members || [];
     return members

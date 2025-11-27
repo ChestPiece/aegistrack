@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   projectService,
   taskService,
@@ -12,87 +12,70 @@ import {
   CardDescription,
 } from "@/shared/components/ui/card";
 import { GlassCard } from "@/shared/components/ui/GlassCard";
+import { Button } from "@/shared/components/ui/button";
 import {
   FolderKanban,
   CheckSquare,
   Clock,
-  Users,
   TrendingUp,
   Shield,
   Activity,
 } from "lucide-react";
-import { Task, Project, User } from "@/types";
+import { toast } from "sonner";
+import { Task, User, Project } from "@/types";
 import { getErrorMessage } from "@/shared/utils/errors";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { ScrollArea } from "@/shared/components/ui/scroll-area";
 import { Badge } from "@/shared/components/ui/badge";
-
-interface DashboardStats {
-  totalProjects: number;
-  totalTasks: number;
-  completedTasks: number;
-  inProgressTasks: number;
-  overdueTasks: number;
-  totalMembers: number;
-}
+import { DashboardSkeleton } from "@/shared/components/skeletons/DashboardSkeleton";
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalProjects: 0,
-    totalTasks: 0,
-    completedTasks: 0,
-    inProgressTasks: 0,
-    overdueTasks: 0,
-    totalMembers: 0,
+  const queryClient = useQueryClient();
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: () => projectService.getAll(),
   });
-  const [projects, setProjects] = useState<any[]>([]);
-  const [admins, setAdmins] = useState<User[]>([]);
-  const [recentTasks, setRecentTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const { data: tasks = [], isLoading: isLoadingTasks } = useQuery({
+    queryKey: ["tasks"],
+    queryFn: () => taskService.getAll(),
+  });
 
-  const fetchData = async () => {
-    try {
-      const [projectsData, tasksData, usersData] = await Promise.all([
-        projectService.getAll(),
-        taskService.getAll(),
-        userService.getAll(),
-      ]);
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+    queryKey: ["users"],
+    queryFn: userService.getAll,
+  });
 
-      const completedTasks = tasksData.filter(
-        (t: Task) => t.status === "completed"
-      ).length;
-      const inProgressTasks = tasksData.filter(
-        (t: Task) => t.status === "in_progress"
-      ).length;
-      const overdueTasks = tasksData.filter(
-        (t: Task) =>
-          t.deadline &&
-          new Date(t.deadline) < new Date() &&
-          t.status !== "completed"
-      ).length;
+  const isLoading = isLoadingProjects || isLoadingTasks || isLoadingUsers;
 
-      setStats({
-        totalProjects: projectsData.length,
-        totalTasks: tasksData.length,
-        completedTasks,
-        inProgressTasks,
-        overdueTasks,
-        totalMembers: usersData.length,
-      });
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
-      setProjects(projectsData);
-      setAdmins(usersData.filter((u: User) => u.role === "admin"));
-      setRecentTasks(tasksData.slice(0, 5)); // Get first 5 tasks (assuming sorted by date)
-    } catch (error) {
-      console.error("Error fetching stats:", getErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
+  const completedTasks = tasks.filter(
+    (t: Task) => t.status === "completed"
+  ).length;
+  const inProgressTasks = tasks.filter(
+    (t: Task) => t.status === "in_progress"
+  ).length;
+  const overdueTasks = tasks.filter(
+    (t: Task) =>
+      t.deadline &&
+      new Date(t.deadline) < new Date() &&
+      t.status !== "completed"
+  ).length;
+
+  const stats = {
+    totalProjects: projects.length,
+    totalTasks: tasks.length,
+    completedTasks,
+    inProgressTasks,
+    overdueTasks,
+    totalMembers: users.length,
   };
+
+  const admins = users.filter((u: User) => u.role === "admin");
+  const recentTasks = tasks.slice(0, 5);
 
   const statCards = [
     {
@@ -172,10 +155,10 @@ export default function AdminDashboard() {
           <CardContent>
             <ScrollArea className="h-[300px] pr-4">
               <div className="space-y-6">
-                {projects.map((project) => {
+                {projects.map((project: Project) => {
                   const totalTasks = project.tasks?.length || 0;
                   const completed =
-                    project.tasks?.filter((t: any) => t.status === "completed")
+                    project.tasks?.filter((t: Task) => t.status === "completed")
                       .length || 0;
                   const progress =
                     totalTasks > 0
@@ -220,7 +203,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {admins.map((admin) => (
+              {admins.map((admin: User) => (
                 <div key={admin.id} className="flex items-center gap-4">
                   <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-primary/10 text-primary">
@@ -245,6 +228,98 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Reactivation Requests */}
+      {users.some((u: User) => u.reactivationRequested) && (
+        <Card className="glass border-orange-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-500">
+              <Activity className="h-5 w-5" />
+              Reactivation Requests
+            </CardTitle>
+            <CardDescription>
+              Members requesting to regain access
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {users
+                .filter((u: User) => u.reactivationRequested)
+                .map((user: User) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between p-4 rounded-lg border border-orange-500/10 bg-orange-500/5"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-9 w-9">
+                        <AvatarFallback className="bg-orange-100 text-orange-600">
+                          {(user.fullName || user.email)
+                            .charAt(0)
+                            .toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">
+                          {user.fullName || "No Name"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {user.email}
+                        </p>
+                        <p className="text-xs text-orange-500 mt-1">
+                          Requested:{" "}
+                          {user.reactivationRequestedAt
+                            ? new Date(
+                                user.reactivationRequestedAt
+                              ).toLocaleDateString()
+                            : "Unknown"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={async () => {
+                          try {
+                            await userService.rejectReactivation(user.id);
+                            queryClient.invalidateQueries({
+                              queryKey: ["users"],
+                            });
+                            toast.success("Reactivation request rejected");
+                          } catch (error) {
+                            console.error("Failed to reject", error);
+                            toast.error("Failed to reject request");
+                          }
+                        }}
+                      >
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        onClick={async () => {
+                          try {
+                            await userService.enable(user.id);
+                            queryClient.invalidateQueries({
+                              queryKey: ["users"],
+                            });
+                            toast.success("User account enabled");
+                          } catch (error) {
+                            console.error("Failed to approve", error);
+                            toast.error("Failed to enable user");
+                          }
+                        }}
+                      >
+                        Approve
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recent Activity / Tasks */}
       <Card className="glass">
         <CardHeader>
@@ -255,7 +330,7 @@ export default function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentTasks.map((task) => (
+            {recentTasks.map((task: Task) => (
               <div
                 key={task.id}
                 className="flex items-center justify-between p-4 rounded-lg border bg-card/50"

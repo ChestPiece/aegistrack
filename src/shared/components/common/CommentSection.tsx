@@ -21,19 +21,18 @@ export function CommentSection({ taskId }: CommentSectionProps) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    const fetchComments = async () => {
+      try {
+        const data = await commentService.getTaskComments(taskId);
+        setComments(data);
+      } catch (error) {
+        toast.error("Failed to load comments");
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchComments();
   }, [taskId]);
-
-  const fetchComments = async () => {
-    try {
-      const data = await commentService.getTaskComments(taskId);
-      setComments(data);
-    } catch (error) {
-      toast.error("Failed to load comments");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
@@ -122,4 +121,3 @@ export function CommentSection({ taskId }: CommentSectionProps) {
     </div>
   );
 }
-

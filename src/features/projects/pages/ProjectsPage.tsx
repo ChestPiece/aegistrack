@@ -1,7 +1,8 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useState } from "react";
 import { projectService, userService } from "@/shared/services/api";
-import { User } from "@/shared/types";
+import { User, Project, Task } from "@/shared/types";
 import { useAuth } from "@/shared/contexts/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -17,7 +18,6 @@ import {
   X,
   Pencil,
   Archive,
-  Flag,
 } from "lucide-react";
 import { Badge } from "@/shared/components/ui/badge";
 import {
@@ -44,56 +44,47 @@ import { toast } from "sonner";
 
 export default function Projects() {
   const { user: currentUser } = useAuth();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [memberSearchTerm, setMemberSearchTerm] = useState("");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<any>(null);
-  const [formData, setFormData] = useState({
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    deadline: string;
+    priority: "low" | "medium" | "high";
+  }>({
     title: "",
     description: "",
     deadline: "",
     priority: "medium",
   });
 
-  useEffect(() => {
-    fetchProjects();
-    fetchUsers();
-  }, []);
-
-  const fetchProjects = async () => {
-    try {
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
       const data = await projectService.getAll();
-      // Sort by priority (High > Medium > Low)
       const priorityOrder = { high: 1, medium: 2, low: 3 };
-      const sortedData = (data || []).sort((a: any, b: any) => {
+      return (data || []).sort((a: Project, b: Project) => {
         const priorityA =
           priorityOrder[a.priority as keyof typeof priorityOrder] || 2;
         const priorityB =
           priorityOrder[b.priority as keyof typeof priorityOrder] || 2;
         return priorityA - priorityB;
       });
-      setProjects(sortedData);
-    } catch (error: any) {
-      toast.error("Failed to load projects");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
-  const fetchUsers = async () => {
-    try {
-      const data = await userService.getAll();
-      setUsers(data || []);
-    } catch (error: any) {
-      console.error("Failed to load users:", error);
-    }
-  };
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+    queryKey: ["users"],
+    queryFn: userService.getAll,
+  });
+
+  const loading = isLoadingProjects || isLoadingUsers;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,7 +104,7 @@ export default function Projects() {
         priority: "medium",
       });
       setSelectedMembers([]);
-      fetchProjects();
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     } catch (error: any) {
       toast.error("Failed to create project");
     }
@@ -137,7 +128,7 @@ export default function Projects() {
       case "high":
         return "destructive";
       case "medium":
-        return "default"; // Changed from "warning" as it might not exist
+        return "default";
       case "low":
         return "secondary";
       default:
@@ -145,7 +136,7 @@ export default function Projects() {
     }
   };
 
-  const openMemberDialog = (project: any) => {
+  const openMemberDialog = (project: Project) => {
     setSelectedProject(project);
     setMemberDialogOpen(true);
     setMemberSearchTerm("");
@@ -157,7 +148,7 @@ export default function Projects() {
     try {
       await projectService.addMembers(selectedProject.id, [userId]);
       toast.success("Member added successfully");
-      fetchProjects();
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     } catch (error: any) {
       toast.error(error.message || "Failed to add member");
     }
@@ -169,7 +160,7 @@ export default function Projects() {
     try {
       await projectService.removeMember(selectedProject.id, userId);
       toast.success("Member removed successfully");
-      fetchProjects();
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     } catch (error: any) {
       toast.error(error.message || "Failed to remove member");
     }
@@ -199,13 +190,13 @@ export default function Projects() {
     try {
       await projectService.update(projectId, { status: "archived" });
       toast.success("Project archived successfully");
-      fetchProjects();
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     } catch (error: any) {
       toast.error("Failed to archive project");
     }
   };
 
-  const openEditDialog = (project: any) => {
+  const openEditDialog = (project: Project) => {
     setEditingProject(project);
     setFormData({
       title: project.title,
@@ -236,7 +227,7 @@ export default function Projects() {
         deadline: "",
         priority: "medium",
       });
-      fetchProjects();
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     } catch (error: any) {
       toast.error("Failed to update project");
     }
@@ -295,7 +286,7 @@ export default function Projects() {
                   <Select
                     value={formData.priority}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, priority: value })
+                      setFormData({ ...formData, priority: value as "low" | "medium" | "high" })
                     }
                   >
                     <SelectTrigger className="h-10">
@@ -419,7 +410,7 @@ export default function Projects() {
               <Select
                 value={formData.priority}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, priority: value })
+                  setFormData({ ...formData, priority: value as "low" | "medium" | "high" })
                 }
               >
                 <SelectTrigger className="h-10">
@@ -483,7 +474,7 @@ export default function Projects() {
         {projects.map((project) => {
           const totalTasks = project.tasks?.length || 0;
           const completedTasks =
-            project.tasks?.filter((t: any) => t.status === "completed")
+            project.tasks?.filter((t: Task) => t.status === "completed")
               .length || 0;
           const completionRate =
             totalTasks > 0
@@ -531,7 +522,11 @@ export default function Projects() {
                 <div className="flex items-center gap-2 mt-1">
                   <Badge
                     variant={
-                      getPriorityColor(project.priority || "medium") as any
+                      getPriorityColor(project.priority || "medium") as
+                        | "default"
+                        | "secondary"
+                        | "destructive"
+                        | "outline"
                     }
                     className="text-xs px-2 py-0.5 h-5"
                   >

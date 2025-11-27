@@ -32,6 +32,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const fetchUserRole = async (userId: string, retryCount = 0) => {
+      try {
+        // First, sync the user to MongoDB to ensure they exist
+        try {
+          await userService.sync();
+        } catch (syncError) {
+          console.error("Error syncing user to MongoDB:", syncError);
+          // If sync fails on first attempt, retry once after a short delay
+          if (retryCount < 1) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            return fetchUserRole(userId, retryCount + 1);
+          }
+          // If sync fails after retry, we'll still try to fetch the user
+          // in case they already exist in MongoDB
+        }
+
+        // Now fetch the user data from MongoDB
+        const user = await userService.getCurrent();
+        setUserRole(user.role || "admin");
+        setUserData(user);
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+        // Only set default role if this is not a "user not found" error
+        // This prevents incorrectly assigning admin role to users who just haven't synced yet
+        const errorMessage = (error as Error).message || "";
+        setUserRole(null);
+        setUserData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     // Set up auth state listener first
     const {
       data: { subscription },
@@ -67,43 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserRole = async (userId: string, retryCount = 0) => {
-    try {
-      // First, sync the user to MongoDB to ensure they exist
-      try {
-        await userService.sync();
-      } catch (syncError) {
-        console.error("Error syncing user to MongoDB:", syncError);
-        // If sync fails on first attempt, retry once after a short delay
-        if (retryCount < 1) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          return fetchUserRole(userId, retryCount + 1);
-        }
-        // If sync fails after retry, we'll still try to fetch the user
-        // in case they already exist in MongoDB
-      }
-
-      // Now fetch the user data from MongoDB
-      const user = await userService.getCurrent();
-      setUserRole(user.role || "admin");
-      setUserData(user);
-    } catch (error) {
-      console.error("Error fetching user role:", error);
-      // Only set default role if this is not a "user not found" error
-      // This prevents incorrectly assigning admin role to users who just haven't synced yet
-      const errorMessage = (error as Error).message || "";
-      if (!errorMessage.includes("User not found")) {
-        setUserRole("admin");
-      } else {
-        setUserRole(null);
-      }
-      setUserData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [navigate]);
 
   const refreshUserData = async () => {
     try {
@@ -124,29 +120,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (error) {
-        // Check if it's an email confirmation error
-        if (error.message.toLowerCase().includes("email not confirmed")) {
-          toast.error(
-            "Please confirm your email before signing in. Check your inbox for the confirmation link."
-          );
-        } else {
-          toast.error(error.message || "Failed to sign in");
-        }
-        throw error;
+    if (error) {
+      // Check if it's an email confirmation error
+      if (error.message.toLowerCase().includes("email not confirmed")) {
+        toast.error(
+          "Please confirm your email before signing in. Check your inbox for the confirmation link."
+        );
+      } else {
+        toast.error(error.message || "Failed to sign in");
       }
-
-      // User sync now happens in fetchUserRole, which is triggered by onAuthStateChange
-      toast.success("Successfully signed in!");
-    } catch (error) {
       throw error;
     }
+
+    // User sync now happens in fetchUserRole, which is triggered by onAuthStateChange
+    toast.success("Successfully signed in!");
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {

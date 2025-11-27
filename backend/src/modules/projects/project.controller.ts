@@ -14,11 +14,9 @@ export const getProjects = async (req: AuthRequest, res: Response) => {
 
     const isArchived = req.query.archived === "true";
 
-    const matchStage: any = isAdmin
-      ? {}
-      : {
-          $or: [{ createdBy: userId }, { members: userId }],
-        };
+    const matchStage: any = {
+      $or: [{ createdBy: userId }, { members: userId }],
+    };
 
     // Add archive filter
     if (isArchived) {

@@ -11,6 +11,8 @@ import {
   confirmInvite,
   disableUser,
   enableUser,
+  requestReactivation,
+  rejectReactivation,
 } from "./user.controller";
 import { inviteUser, resendInvite } from "./invitation.controller";
 
@@ -26,6 +28,8 @@ router.post("/confirm-invite", authenticateUser, confirmInvite);
 router.post("/:id/resend-invitation", authenticateUser, resendInvite);
 router.patch("/:id/disable", authenticateUser, disableUser);
 router.patch("/:id/enable", authenticateUser, enableUser);
+router.post("/request-reactivation", requestReactivation); // Public or authenticated? Login page uses it, user might be authenticated but disabled.
+router.post("/:id/reject-reactivation", authenticateUser, rejectReactivation);
 router.put("/:id", authenticateUser, updateUser);
 router.delete("/:id", authenticateUser, deleteUser);
 

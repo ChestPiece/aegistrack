@@ -13,11 +13,9 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
 
     const isArchived = req.query.archived === "true";
 
-    const query: any = isAdmin
-      ? {}
-      : {
-          $or: [{ assignedTo: userId }, { createdBy: userId }],
-        };
+    const query: any = {
+      $or: [{ assignedTo: userId }, { createdBy: userId }],
+    };
 
     // Add archive filter
     if (isArchived) {

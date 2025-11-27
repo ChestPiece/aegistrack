@@ -77,8 +77,8 @@ export default function UpdatePasswordPage() {
       } else {
         window.location.href = "/dashboard";
       }
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update password");
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to update password");
     } finally {
       setLoading(false);
     }

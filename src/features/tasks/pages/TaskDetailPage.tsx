@@ -32,19 +32,7 @@ import { CommentSection } from "@/shared/components/common/CommentSection";
 import { toast } from "sonner";
 import { taskService } from "@/shared/services/api";
 
-interface Project {
-  _id: string;
-  title: string;
-}
-
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status: "pending" | "in_progress" | "completed";
-  deadline?: string;
-  projectId?: Project;
-}
+import { Task, Project } from "@/shared/types";
 
 export default function MyTasks() {
   const { user } = useAuth();
@@ -139,7 +127,10 @@ export default function MyTasks() {
         </p>
       </div>
 
-      <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+      <Tabs
+        value={filter}
+        onValueChange={(v) => setFilter(v as "all" | "active" | "completed")}
+      >
         <TabsList>
           <TabsTrigger value="all">
             All Tasks
@@ -204,18 +195,22 @@ export default function MyTasks() {
                                   Overdue
                                 </Badge>
                               )}
-                            {task.projectId?.title && (
-                              <Badge variant="outline">
-                                {task.projectId.title}
-                              </Badge>
-                            )}
+                            {typeof task.projectId !== "string" &&
+                              task.projectId?.title && (
+                                <Badge variant="outline">
+                                  {(task.projectId as Project).title}
+                                </Badge>
+                              )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Select
                             value={task.status}
                             onValueChange={(value) =>
-                              updateTaskStatus(task.id, value as any)
+                              updateTaskStatus(
+                                task.id,
+                                value as "pending" | "in_progress" | "completed"
+                              )
                             }
                           >
                             <SelectTrigger className="w-40">

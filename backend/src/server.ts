@@ -11,10 +11,20 @@ connectDatabase();
 const httpServer = createServer(app);
 
 // Initialize Socket.IO
+const allowedOrigins = [
+  config.clientUrl || "http://localhost:5173",
+  config.frontendUrl || "http://localhost:8080","https://aegistrack-chi.vercel.app/",
+  "https://aegistrack.onrender.com", // Fallback for production
+  "https://aegistrack-frontend.onrender.com", // Fallback for production
+];
+
+console.log("Socket.IO allowed origins:", allowedOrigins);
+
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: config.clientUrl || "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
+    methods: ["GET", "POST"],
   },
 });
 

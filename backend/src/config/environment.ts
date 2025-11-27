@@ -8,4 +8,5 @@ export const config = {
   supabaseServiceKey:
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
   frontendUrl: process.env.FRONTEND_URL || "http://localhost:8080",
+  clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
 };

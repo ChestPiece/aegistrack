@@ -5,6 +5,7 @@ import { userService, authService } from "@/shared/services/api";
 import { User } from "@/shared/types";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useDatabaseSync } from "@/shared/hooks/useDatabaseSync";
 
 interface AuthContextType {
   user: SupabaseUser | null;
@@ -30,6 +31,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Enable real-time database synchronization
+  useDatabaseSync(user?.id || null);
 
   useEffect(() => {
     const fetchUserRole = async (userId: string, retryCount = 0) => {

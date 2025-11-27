@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import User from "../src/models/User";
-import Project from "../src/models/Project";
-import Task from "../src/models/Task";
+import User from "../src/modules/users/user.model";
+import Project from "../src/modules/projects/project.model";
+import Task from "../src/modules/tasks/task.model";
 
 dotenv.config();
 

@@ -7,5 +7,5 @@ export const config = {
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseServiceKey:
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
-  frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
+  frontendUrl: process.env.FRONTEND_URL || "http://localhost:8080",
 };

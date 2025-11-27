@@ -17,7 +17,7 @@ export default function AuthCallback() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
   );
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(1);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -58,12 +58,14 @@ export default function AuthCallback() {
         toast.success("Email confirmed successfully!");
 
         // Start countdown
-        let counter = 3;
-        const interval = setInterval(() => {
+        let counter = 1;
+        const interval = setInterval(async () => {
           counter--;
           setCountdown(counter);
           if (counter === 0) {
             clearInterval(interval);
+            // Sign out the user so they have to log in manually
+            await supabase.auth.signOut();
             navigate("/auth/login");
           }
         }, 1000);

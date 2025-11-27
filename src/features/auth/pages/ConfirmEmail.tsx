@@ -51,7 +51,7 @@ export default function ConfirmEmail() {
         type: "signup",
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/login`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 

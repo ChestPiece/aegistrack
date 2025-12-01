@@ -30,7 +30,7 @@ const UserSchema: Schema = new Schema(
     company: { type: String },
     bio: { type: String },
     location: { type: String },
-    role: { type: String, enum: ["admin", "member"], default: "admin" },
+    role: { type: String, enum: ["admin", "member"], default: "member" },
     status: { type: String, enum: ["pending", "active"], default: "active" },
     isActive: { type: Boolean, default: true },
     disabledBy: { type: String },

@@ -22,6 +22,10 @@ const NotificationSchema: Schema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Indexes for performance
+NotificationSchema.index({ userId: 1, createdAt: -1 });
+NotificationSchema.index({ userId: 1, read: 1 });
+
 NotificationSchema.set("toJSON", {
   transform: (_doc: any, ret: any) => {
     ret.id = ret._id.toString();

@@ -3,6 +3,7 @@ import { AuthRequest } from "../../shared/middleware/auth.middleware";
 import Task from "./task.model";
 import User from "../users/user.model";
 import Notification from "../notifications/notification.model";
+import { logger } from "../../utils/logger";
 
 export const getTasks = async (req: AuthRequest, res: Response) => {
   try {
@@ -24,19 +25,17 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
       query.status = { $ne: "archived" };
     }
 
-    console.log("getTasks - userId (supabaseId):", userId);
-    console.log("getTasks - isAdmin:", isAdmin);
-    console.log("getTasks - query:", JSON.stringify(query));
+    logger.debug("getTasks", { userId, isAdmin, query });
 
     const tasks = await Task.find(query)
       .populate("projectId", "title")
       .sort({ createdAt: -1 });
 
-    console.log("getTasks - found tasks:", tasks.length);
+    logger.debug("getTasks results", { taskCount: tasks.length });
 
     res.json(tasks);
   } catch (error) {
-    console.error("Error fetching tasks:", error);
+    logger.error("Error fetching tasks:", error);
     res.status(500).json({ error: "Error fetching tasks" });
   }
 };
@@ -47,8 +46,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       req.body;
     const userId = req.user.id;
 
-    console.log("createTask - assignedTo:", assignedTo);
-    console.log("createTask - createdBy:", userId);
+    logger.debug("createTask", { assignedTo, createdBy: userId });
 
     const newTask = new Task({
       title,
@@ -62,7 +60,10 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 
     const savedTask = await newTask.save();
 
-    console.log("createTask - saved task assignedTo:", savedTask.assignedTo);
+    logger.debug("createTask saved", {
+      taskId: savedTask.id,
+      assignedTo: savedTask.assignedTo,
+    });
 
     // Check project status and update if necessary
     if (projectId) {
@@ -106,7 +107,7 @@ export const createTask = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(savedTask);
   } catch (error) {
-    console.error("Error creating task:", error);
+    logger.error("Error creating task:", error);
     res.status(500).json({ error: "Error creating task" });
   }
 };
@@ -217,7 +218,7 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
 
     res.json(updatedTask);
   } catch (error) {
-    console.error("Error updating task:", error);
+    logger.error("Error updating task:", error);
     res.status(500).json({ error: "Error updating task" });
   }
 };

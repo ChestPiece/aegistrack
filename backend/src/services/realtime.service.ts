@@ -5,6 +5,7 @@ import User from "../modules/users/user.model";
 import Project from "../modules/projects/project.model";
 import Task from "../modules/tasks/task.model";
 import Notification from "../modules/notifications/notification.model";
+import { logger } from "../utils/logger";
 
 let io: SocketIOServer;
 
@@ -15,16 +16,16 @@ export const initializeSocketIO = (socketServer: SocketIOServer) => {
   io = socketServer;
 
   io.on("connection", (socket) => {
-    console.log("Client connected:", socket.id);
+    logger.info("Client connected:", { socketId: socket.id });
 
     socket.on("authenticate", (userId: string) => {
       // Join user-specific room for targeted updates
       socket.join(`user:${userId}`);
-      console.log(`User ${userId} authenticated and joined room`);
+      logger.info(`User ${userId} authenticated and joined room`);
     });
 
     socket.on("disconnect", () => {
-      console.log("Client disconnected:", socket.id);
+      logger.info("Client disconnected:", { socketId: socket.id });
     });
   });
 
@@ -60,7 +61,7 @@ const setupChangeStreams = () => {
     handleNotificationChange(change);
   });
 
-  console.log("MongoDB Change Streams initialized");
+  logger.info("MongoDB Change Streams initialized");
 };
 
 /**
@@ -69,7 +70,7 @@ const setupChangeStreams = () => {
 const handleUserChange = (change: any) => {
   const { operationType, documentKey, fullDocument } = change;
 
-  console.log("User change detected:", operationType, documentKey);
+  logger.info("User change detected:", { operationType, documentKey });
 
   // Broadcast to all clients to invalidate user-related queries
   io.emit("database:change", {
@@ -93,7 +94,7 @@ const handleUserChange = (change: any) => {
 const handleProjectChange = (change: any) => {
   const { operationType, documentKey, fullDocument } = change;
 
-  console.log("Project change detected:", operationType, documentKey);
+  logger.info("Project change detected:", { operationType, documentKey });
 
   io.emit("database:change", {
     collection: "projects",
@@ -119,7 +120,7 @@ const handleProjectChange = (change: any) => {
 const handleTaskChange = (change: any) => {
   const { operationType, documentKey, fullDocument } = change;
 
-  console.log("Task change detected:", operationType, documentKey);
+  logger.info("Task change detected:", { operationType, documentKey });
 
   io.emit("database:change", {
     collection: "tasks",
@@ -145,7 +146,7 @@ const handleTaskChange = (change: any) => {
 const handleNotificationChange = (change: any) => {
   const { operationType, documentKey, fullDocument } = change;
 
-  console.log("Notification change detected:", operationType, documentKey);
+  logger.info("Notification change detected:", { operationType, documentKey });
 
   io.emit("database:change", {
     collection: "notifications",

@@ -3,6 +3,7 @@ import { AuthRequest } from "../../shared/middleware/auth.middleware";
 import User from "./user.model";
 import { supabase } from "../../config/supabase";
 import Notification from "../notifications/notification.model";
+import { logger } from "../../utils/logger";
 
 export const syncUser = async (req: AuthRequest, res: Response) => {
   try {
@@ -139,7 +140,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(newUser);
   } catch (error) {
-    console.error("Error creating user:", error);
+    logger.error("Error creating user:", error);
     res.status(500).json({ error: "Error creating user" });
   }
 };
@@ -178,7 +179,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
 
     res.json(updatedUser);
   } catch (error) {
-    console.error("Error updating user:", error);
+    logger.error("Error updating user:", error);
     res.status(500).json({ error: "Error updating user" });
   }
 };
@@ -206,7 +207,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     await user.save();
     res.json(user);
   } catch (error) {
-    console.error("Error updating profile:", error);
+    logger.error("Error updating profile:", error);
     res.status(500).json({ error: "Error updating profile" });
   }
 };
@@ -240,7 +241,7 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     );
 
     if (authError) {
-      console.error("Error deleting from Supabase:", authError);
+      logger.error("Error deleting from Supabase:", authError);
       // Continue with MongoDB deletion even if Supabase deletion fails
     }
 
@@ -257,7 +258,7 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error("Error deleting user:", error);
+    logger.error("Error deleting user:", error);
     res.status(500).json({ error: "Error deleting user" });
   }
 };
@@ -276,7 +277,7 @@ export const confirmInvite = async (req: AuthRequest, res: Response) => {
 
     res.json({ message: "User confirmed successfully", user });
   } catch (error) {
-    console.error("Error confirming user:", error);
+    logger.error("Error confirming user:", error);
     res.status(500).json({ error: "Error confirming user" });
   }
 };
@@ -320,7 +321,7 @@ export const disableUser = async (req: AuthRequest, res: Response) => {
 
     res.json({ message: "User disabled successfully", user });
   } catch (error) {
-    console.error("Error disabling user:", error);
+    logger.error("Error disabling user:", error);
     res.status(500).json({ error: "Error disabling user" });
   }
 };
@@ -409,7 +410,7 @@ export const requestReactivation = async (req: AuthRequest, res: Response) => {
 
     res.json({ message: "Reactivation request sent successfully" });
   } catch (error) {
-    console.error("Error requesting reactivation:", error);
+    logger.error("Error requesting reactivation:", error);
     res.status(500).json({ error: "Error requesting reactivation" });
   }
 };
@@ -439,7 +440,7 @@ export const rejectReactivation = async (req: AuthRequest, res: Response) => {
 
     res.json({ message: "Reactivation request rejected" });
   } catch (error) {
-    console.error("Error rejecting reactivation:", error);
+    logger.error("Error rejecting reactivation:", error);
     res.status(500).json({ error: "Error rejecting reactivation" });
   }
 };

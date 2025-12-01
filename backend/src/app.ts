@@ -32,6 +32,9 @@ app.use(
   })
 );
 
+app.use(express.json());
+app.use(morgan("dev"));
+
 // Routes
 app.use("/api", routes);
 

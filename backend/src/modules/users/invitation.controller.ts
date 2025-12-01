@@ -11,6 +11,12 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
     const requesterId = req.user.id;
     const role = "member";
 
+    logger.info("InviteUser request received", {
+      email,
+      fullName,
+      requesterId,
+    });
+
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
@@ -25,51 +31,108 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    logger.info("Creating user in Supabase...");
+
+    // 1. Create user with auto-confirm disabled so we can send a custom invite/confirm email
     const { data: authData, error: authError } =
-      await supabase.auth.admin.inviteUserByEmail(email, {
-        data: { role, fullName, addedBy: requesterId },
-        redirectTo: `${config.frontendUrl}/auth/callback`,
+      await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: false, // We will trigger the email manually with specific redirect
+        user_metadata: {
+          role,
+          full_name: fullName,
+          addedBy: requesterId,
+        },
       });
 
     if (authError) {
-      logger.error("Supabase invite user error:", authError);
+      logger.error("Supabase create user error:", authError);
       return res.status(400).json({ message: authError.message });
     }
 
     if (!authData.user) {
-      return res.status(500).json({ message: "Failed to invite user" });
+      logger.error("Supabase returned no user data");
+      return res.status(500).json({ message: "Failed to create user" });
     }
 
-    const { error: updateError } = await supabase.auth.admin.updateUserById(
-      authData.user.id,
-      { password }
-    );
+    logger.info("Supabase user created", { userId: authData.user.id });
 
-    if (updateError) {
-      logger.error("Supabase update password error:", updateError);
-    }
+    // 2. Send confirmation email with correct redirect
+    // Redirect to /auth/callback which handles the token and redirects to login
+    const redirectUrl = `${config.frontendUrl}/auth/callback`;
+    logger.info("Sending confirmation email...", { redirectUrl });
 
-    const user = await User.findOneAndUpdate(
-      { email },
-      {
-        supabaseId: authData.user.id,
-        email,
-        role,
-        fullName,
-        addedBy: requesterId,
-        status: "pending",
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: email,
+      options: {
+        emailRedirectTo: redirectUrl,
       },
-      { new: true, upsert: true }
-    );
+    });
+
+    if (resendError) {
+      logger.error("Error sending confirmation email:", resendError);
+      // We don't fail the request here, but we should log it.
+      // The user exists, so the admin can try resending later.
+    }
+
+    // Create or update user in MongoDB
+    // We handle potential duplicate key errors (e.g. if Supabase user exists but Mongo user has different email/ID mapping)
+    let user;
+    try {
+      logger.info("Creating/Updating user in MongoDB...");
+      user = await User.findOneAndUpdate(
+        { email },
+        {
+          supabaseId: authData.user.id,
+          email,
+          role,
+          fullName,
+          addedBy: requesterId,
+          status: "pending",
+        },
+        { new: true, upsert: true }
+      );
+      logger.info("MongoDB user updated successfully");
+    } catch (mongoError: any) {
+      logger.error("MongoDB error:", mongoError);
+      // Handle duplicate key error (E11000)
+      if (mongoError.code === 11000) {
+        // If duplicate key is on supabaseId, it means we have a user with this ID but different email
+        // We should try to find by supabaseId and update
+        logger.warn(
+          "Duplicate key error in Mongo, trying to find by supabaseId",
+          mongoError
+        );
+        user = await User.findOneAndUpdate(
+          { supabaseId: authData.user.id },
+          {
+            email,
+            role,
+            fullName,
+            addedBy: requesterId,
+            status: "pending",
+          },
+          { new: true, upsert: true }
+        );
+      } else {
+        throw mongoError;
+      }
+    }
 
     res.status(200).json({
       message:
-        "Team member invited successfully. They will receive an invitation email to activate their account.",
+        "Team member invited successfully. They will receive an email to verify their account.",
       user,
     });
   } catch (error: any) {
-    logger.error("Invite user error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    logger.error("Invite user error (Catch Block):", error);
+    res.status(500).json({
+      message: "Internal server error",
+      details: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
   }
 };
 
@@ -108,36 +171,20 @@ export const resendInvite = async (req: AuthRequest, res: Response) => {
     }
 
     logger.debug("ResendInvite - calling Supabase", { email: user.email });
-    const { error: authError } = await supabase.auth.admin.inviteUserByEmail(
-      user.email
-    );
+
+    // Use resend with type 'signup' to send the confirmation email again
+    // This avoids the "already registered" error and sends the correct link
+    const redirectUrl = `${config.frontendUrl}/auth/callback`;
+    const { error: authError } = await supabase.auth.resend({
+      type: "signup",
+      email: user.email,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
+    });
 
     if (authError) {
       logger.error("Supabase resend invite error:", authError);
-
-      if (
-        authError.message?.toLowerCase().includes("already registered") ||
-        authError.status === 422
-      ) {
-        logger.info("ResendInvite - sending password reset instead");
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-          user.email
-        );
-
-        if (resetError) {
-          logger.error("Supabase reset password error:", resetError);
-          return res.status(400).json({
-            message: "Failed to resend invitation: " + resetError.message,
-          });
-        }
-
-        logger.info("ResendInvite - password reset sent");
-        return res.status(200).json({
-          message: "Invitation resent successfully (as password reset)",
-          user,
-        });
-      }
-
       return res.status(400).json({ message: authError.message });
     }
 

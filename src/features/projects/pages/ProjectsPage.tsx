@@ -9,6 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/components/ui/card";
+import { Skeleton } from "@/shared/components/ui/skeleton";
+import { ProjectSkeleton } from "@/shared/components/skeletons/ProjectSkeleton";
 import { Button } from "@/shared/components/ui/button";
 import {
   Plus,
@@ -229,6 +231,25 @@ export default function Projects() {
   const availableUsersForSelect = users.filter(
     (u) => u.supabaseId !== currentUser?.id
   );
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-9 w-32 mb-1" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ProjectSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">

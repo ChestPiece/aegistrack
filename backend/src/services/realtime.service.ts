@@ -6,6 +6,7 @@ import Project from "../modules/projects/project.model";
 import Task from "../modules/tasks/task.model";
 import Notification from "../modules/notifications/notification.model";
 import { logger } from "../utils/logger";
+import { ChangeStreamDocument } from "../shared/types/database.types";
 
 let io: SocketIOServer;
 
@@ -65,15 +66,13 @@ const setupChangeStreams = () => {
 };
 
 /**
- * Handle user collection changes
+ * Handle User collection changes
  */
-const handleUserChange = (change: any) => {
+const handleUserChange = (change: ChangeStreamDocument) => {
   const { operationType, documentKey, fullDocument } = change;
 
-  logger.info("User change detected:", { operationType, documentKey });
-
-  // Broadcast to all clients to invalidate user-related queries
-  io.emit("database:change", {
+  // Broadcast to all clients
+  io.emit("user:changed", {
     collection: "users",
     operation: operationType,
     id: documentKey._id.toString(),
@@ -83,20 +82,19 @@ const handleUserChange = (change: any) => {
   // If user was deleted, notify that specific user to logout
   if (operationType === "delete" && documentKey._id) {
     io.to(`user:${documentKey._id.toString()}`).emit("user:deleted", {
-      message: "Your account has been deleted",
+      userId: documentKey._id.toString(),
     });
   }
 };
 
 /**
- * Handle project collection changes
+ * Handle Project collection changes
  */
-const handleProjectChange = (change: any) => {
+const handleProjectChange = (change: ChangeStreamDocument) => {
   const { operationType, documentKey, fullDocument } = change;
 
-  logger.info("Project change detected:", { operationType, documentKey });
-
-  io.emit("database:change", {
+  // Broadcast to all clients
+  io.emit("project:changed", {
     collection: "projects",
     operation: operationType,
     id: documentKey._id.toString(),
@@ -109,20 +107,20 @@ const handleProjectChange = (change: any) => {
       io.to(`user:${memberId}`).emit("project:changed", {
         projectId: documentKey._id.toString(),
         operation: operationType,
+        document: fullDocument,
       });
     });
   }
 };
 
 /**
- * Handle task collection changes
+ * Handle Task collection changes
  */
-const handleTaskChange = (change: any) => {
+const handleTaskChange = (change: ChangeStreamDocument) => {
   const { operationType, documentKey, fullDocument } = change;
 
-  logger.info("Task change detected:", { operationType, documentKey });
-
-  io.emit("database:change", {
+  // Broadcast to all clients
+  io.emit("task:changed", {
     collection: "tasks",
     operation: operationType,
     id: documentKey._id.toString(),
@@ -135,20 +133,20 @@ const handleTaskChange = (change: any) => {
       io.to(`user:${userId}`).emit("task:changed", {
         taskId: documentKey._id.toString(),
         operation: operationType,
+        document: fullDocument,
       });
     });
   }
 };
 
 /**
- * Handle notification collection changes
+ * Handle Notification collection changes
  */
-const handleNotificationChange = (change: any) => {
+const handleNotificationChange = (change: ChangeStreamDocument) => {
   const { operationType, documentKey, fullDocument } = change;
 
-  logger.info("Notification change detected:", { operationType, documentKey });
-
-  io.emit("database:change", {
+  // Broadcast to all clients
+  io.emit("notification:changed", {
     collection: "notifications",
     operation: operationType,
     id: documentKey._id.toString(),

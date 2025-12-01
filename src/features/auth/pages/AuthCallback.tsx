@@ -54,18 +54,23 @@ export default function AuthCallback() {
           // Continue anyway - user can still login
         }
 
+        // Sign out the user immediately so they have to log in again
+        await supabase.auth.signOut();
+
         setStatus("success");
-        toast.success("Email confirmed successfully!");
+        toast.success("Email confirmed successfully! Please log in.");
 
         // Start countdown
-        let counter = 1;
+        let counter = 3;
+        setCountdown(counter);
+
         const interval = setInterval(async () => {
           counter--;
           setCountdown(counter);
           if (counter === 0) {
             clearInterval(interval);
-            // Redirect to dashboard directly
-            navigate("/dashboard");
+            // Redirect to login page
+            navigate("/auth/login");
           }
         }, 1000);
 
@@ -133,7 +138,7 @@ export default function AuthCallback() {
             <div className="text-center bg-muted/50 rounded-lg p-4 border border-border/50">
               <p className="text-sm text-muted-foreground mb-2">
                 You have been successfully verified. Redirecting you to the
-                dashboard...
+                login page...
               </p>
               <p className="text-lg font-semibold">
                 Redirecting in {countdown}...

@@ -44,7 +44,8 @@ import {
 import { MultiSelect } from "@/shared/components/ui/multi-select";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
-import { DashboardSkeleton } from "@/shared/components/skeletons/DashboardSkeleton";
+import { TaskSkeleton } from "@/shared/components/skeletons/TaskSkeleton";
+import { Skeleton } from "@/shared/components/ui/skeleton";
 
 export default function Tasks() {
   const { user: currentUser, userRole } = useAuth();
@@ -255,7 +256,22 @@ export default function Tasks() {
   };
 
   if (loading) {
-    return <DashboardSkeleton />;
+    return (
+      <div className="space-y-6 animate-fade-in pb-10">
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-9 w-24 mb-1" />
+            <Skeleton className="h-5 w-48" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <TaskSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

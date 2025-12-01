@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar";
 import { Badge } from "@/shared/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, User as UserIcon } from "lucide-react";
-import { Skeleton } from "@/shared/components/ui/skeleton";
+import { ProfileSkeleton } from "@/shared/components/skeletons/ProfileSkeleton";
 
 export default function Profile() {
   const { user, userRole, userData, refreshUserData } = useAuth();
@@ -81,15 +81,7 @@ export default function Profile() {
   };
 
   if (isLoadingProfile) {
-    return (
-      <div className="space-y-6 max-w-3xl">
-        <Skeleton className="h-8 w-48" />
-        <div className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   return (

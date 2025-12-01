@@ -5,6 +5,44 @@ import { supabase } from "../../config/supabase";
 import Notification from "../notifications/notification.model";
 import { logger } from "../../utils/logger";
 
+export const checkUserExists = async (req: AuthRequest, res: Response) => {
+  try {
+    const { email } = req.query;
+
+    if (!email || typeof email !== "string") {
+      return res.status(400).json({ error: "Email parameter is required" });
+    }
+
+    // Check in MongoDB first (fastest check)
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.json({ exists: true, source: "database" });
+    }
+
+    // Check in Supabase auth
+    try {
+      const { data, error } = await supabase.auth.admin.listUsers();
+      if (!error && data?.users) {
+        const supabaseUser = data.users.find(
+          (u) => u.email?.toLowerCase() === email.toLowerCase()
+        );
+        if (supabaseUser) {
+          return res.json({ exists: true, source: "supabase" });
+        }
+      }
+    } catch (supabaseError) {
+      // If Supabase check fails, just log and continue
+      // We already checked MongoDB which is our source of truth
+      logger.error("Error checking Supabase for user:", supabaseError);
+    }
+
+    res.json({ exists: false });
+  } catch (error) {
+    logger.error("Error checking user existence:", error);
+    res.status(500).json({ error: "Error checking user existence" });
+  }
+};
+
 export const syncUser = async (req: AuthRequest, res: Response) => {
   try {
     const { id, email, user_metadata } = req.user;
@@ -26,8 +64,12 @@ export const syncUser = async (req: AuthRequest, res: Response) => {
       user = new User({
         supabaseId: id,
         email: email,
-        fullName: user_metadata?.full_name,
-        avatarUrl: user_metadata?.avatar_url,
+        fullName: user_metadata?.full_name || "",
+        avatarUrl: user_metadata?.avatar_url || "",
+        phoneNumber: "",
+        company: "",
+        bio: "",
+        location: "",
         role: role,
         addedBy: user_metadata?.addedBy,
       });
@@ -205,6 +247,28 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
 
     await user.save();
+
+    // Sync updates to Supabase user metadata
+    const metadataUpdates: Record<string, any> = {};
+    if (fullName !== undefined) metadataUpdates.full_name = fullName;
+    if (avatarUrl !== undefined) metadataUpdates.avatar_url = avatarUrl;
+    if (phoneNumber !== undefined) metadataUpdates.phoneNumber = phoneNumber;
+    if (company !== undefined) metadataUpdates.company = company;
+    if (bio !== undefined) metadataUpdates.bio = bio;
+    if (location !== undefined) metadataUpdates.location = location;
+
+    if (Object.keys(metadataUpdates).length > 0) {
+      const { error: supabaseError } = await supabase.auth.admin.updateUserById(
+        userId,
+        { user_metadata: metadataUpdates }
+      );
+
+      if (supabaseError) {
+        logger.error("Error syncing profile to Supabase:", supabaseError);
+        // We continue since the DB update was successful, but log the error
+      }
+    }
+
     res.json(user);
   } catch (error) {
     logger.error("Error updating profile:", error);

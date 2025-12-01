@@ -1,6 +1,7 @@
 import express from "express";
 import { authenticateUser } from "../../shared/middleware/auth.middleware";
 import {
+  checkUserExists,
   syncUser,
   getCurrentUser,
   getAllUsers,
@@ -17,6 +18,9 @@ import {
 import { inviteUser, resendInvite } from "./invitation.controller";
 
 const router = express.Router();
+
+// Public route - must come before authenticated routes
+router.get("/check-exists", checkUserExists);
 
 router.post("/sync", authenticateUser, syncUser);
 router.get("/me", authenticateUser, getCurrentUser);

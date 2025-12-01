@@ -5,6 +5,10 @@ export const userService = {
   getProfile: (): Promise<User> => api.get<User>("/users/me"),
   getCurrent: (): Promise<User> => api.get<User>("/users/me"),
   sync: (): Promise<User> => api.post<User>("/users/sync", {}),
+  checkExists: (email: string): Promise<{ exists: boolean; source?: string }> =>
+    api.get<{ exists: boolean; source?: string }>(
+      `/users/check-exists?email=${encodeURIComponent(email)}`
+    ),
   updateProfile: (data: {
     fullName?: string;
     avatarUrl?: string;

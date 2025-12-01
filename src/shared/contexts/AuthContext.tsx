@@ -154,6 +154,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
+      // First check if user already exists to prevent rate limiting
+      try {
+        const { exists } = await userService.checkExists(email);
+
+        if (exists) {
+          toast.error(
+            "An account with this email already exists. Please sign in instead."
+          );
+          throw new Error("User already exists");
+        }
+      } catch (checkError) {
+        // If the check fails, log it but continue with signup
+        // This ensures signup still works even if check endpoint fails
+        console.warn("Error checking user existence:", checkError);
+        if ((checkError as Error).message === "User already exists") {
+          throw checkError; // Re-throw if it's our intentional error
+        }
+        // Otherwise continue with signup
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -176,7 +196,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         toast.success("Account created! You can now sign in.");
       }
     } catch (error) {
-      toast.error((error as Error).message || "Failed to create account");
+      // Only show toast if we haven't already shown the "user exists" message
+      if ((error as Error).message !== "User already exists") {
+        toast.error((error as Error).message || "Failed to create account");
+      }
       throw error;
     }
   };
